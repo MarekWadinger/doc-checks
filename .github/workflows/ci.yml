@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Run this repo's own hooks (the `repo: local` setup) with the full
+  # toolchain available, so mermaid validation is enforced, not skipped.
+  pre-commit:
+    runs-on: ubuntu-latest
+    env:
+      DOC_CHECK_MERMAID_REQUIRE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install lychee
+        run: |
+          curl -sSfL https://github.com/lycheeverse/lychee/releases/download/lychee-v0.18.1/lychee-x86_64-unknown-linux-gnu.tar.gz \
+            | tar -xz -C /usr/local/bin lychee
+      - name: Install mermaid-cli
+        run: npm install -g @mermaid-js/mermaid-cli
+      - run: uv sync
+      - run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  # Verify the consumer experience documented in the README: pre-commit
+  # installs this repo from .pre-commit-hooks.yaml into an isolated env
+  # (no uv, no manual setup) and the hooks run.
+  consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pre-commit
+      - name: Run hooks as a consumer would (pre-commit try-repo)
+        run: |
+          pre-commit try-repo . doc-check-make-refs --all-files
+          pre-commit try-repo . doc-check-cd-refs --all-files
+          pre-commit try-repo . doc-check-py-imports --all-files
+          pre-commit try-repo . doc-check-mermaid --all-files
