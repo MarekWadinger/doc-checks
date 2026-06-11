@@ -3,6 +3,11 @@
 # .pre-commit-hooks.yaml), so we run the console scripts through uv instead.
 # Install with: uv run pre-commit install
 repos:
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.8.3
+    hooks:
+      - id: commitizen          # rejects non-conventional commit messages
+        stages: [commit-msg]
   - repo: local
     hooks:
       - id: doc-check-make-refs

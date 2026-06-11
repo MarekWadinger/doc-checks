@@ -18,8 +18,16 @@ doc-check-mermaid = "doc_checks.check_mermaid:main"
 
 [dependency-groups]
 dev = [
+    "commitizen>=4.16.3",
     "pre-commit>=4.6.0",
 ]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"      # [project].version is the single source of truth
+tag_format = "v$version"         # matches the `rev: vX.Y.Z` consumers pin
+update_changelog_on_bump = true
+major_version_zero = true        # 0.x: breaking changes bump minor, not major
 
 [build-system]
 requires = ["hatchling"]
