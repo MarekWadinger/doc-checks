@@ -1,6 +1,6 @@
 [project]
 name = "doc-checks"
-version = "0.1.1"
+version = "0.2.0"
 description = "Self-healing documentation checks, distributed as pre-commit hooks"
 # ``Path.full_match`` (used for exclude-glob filtering) requires Python 3.13.
 requires-python = ">=3.13"

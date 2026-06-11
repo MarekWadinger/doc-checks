@@ -1,3 +1,9 @@
+## v0.2.0 (2026-06-11)
+
+### Feat
+
+- support [tool.doc-checks] in pyproject.toml as config source
+
 ## v0.1.1 (2026-06-11)
 
 ### Fix
