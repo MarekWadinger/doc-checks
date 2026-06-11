@@ -110,10 +110,12 @@ tags in one step — this repo automates exactly that on push to main (see
 ### Per-repo configuration
 
 Defaults live in the packaged [`src/doc_checks/config.yaml`](src/doc_checks/config.yaml).
-To override, drop a `.doc-checks.yaml` at your repo root — sections are merged
-key-by-key over the defaults, so you only state what differs:
+To override, either drop a `.doc-checks.yaml` at your repo root or add a
+`[tool.doc-checks]` table to `pyproject.toml` — sections are merged key-by-key
+over the defaults, so you only state what differs:
 
 ```yaml
+# .doc-checks.yaml
 make_refs:
   ignore_targets: [deploy]   # documented but defined in another repo's Makefile
 py_imports:
@@ -122,7 +124,17 @@ mermaid:
   require_mmdc: true         # fail instead of skip when mmdc is missing
 ```
 
-This repo's own [`.doc-checks.yaml`](.doc-checks.yaml) is a working example.
+```toml
+# pyproject.toml — same keys, TOML syntax
+[tool.doc-checks.make_refs]
+ignore_targets = ["deploy"]
+
+[tool.doc-checks.py_imports]
+project_packages = ["myapp"]
+```
+
+If both are present, `.doc-checks.yaml` wins on conflicting keys. This repo's
+own [`.doc-checks.yaml`](.doc-checks.yaml) is a working example.
 
 ### CI
 

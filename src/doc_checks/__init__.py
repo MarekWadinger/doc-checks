@@ -19,6 +19,7 @@ Usage (console scripts installed with the package):
 from __future__ import annotations
 
 import subprocess
+import tomllib
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -53,24 +54,43 @@ def repo_root() -> Path:
         return Path.cwd()
 
 
+def _load_pyproject_overrides(root: Path) -> dict[str, Any]:
+    """``[tool.doc-checks]`` table from the consumer's pyproject.toml, if any."""
+    pyproject = root / "pyproject.toml"
+    if not pyproject.exists():
+        return {}
+    with pyproject.open("rb") as fh:
+        data = tomllib.load(fh)
+    return data.get("tool", {}).get("doc-checks", {})
+
+
+def _merge_sections(config: dict[str, Any], override: dict[str, Any]) -> None:
+    for section, values in override.items():
+        if isinstance(values, dict) and isinstance(config.get(section), dict):
+            config[section] = {**config[section], **values}
+        else:
+            config[section] = values
+
+
 @lru_cache(maxsize=1)
 def get_config() -> dict[str, Any]:
-    """Packaged defaults merged with the consumer repo's ``.doc-checks.yaml``.
+    """Packaged defaults merged with the consumer repo's overrides.
 
-    The merge is per check section: keys set in the override file replace the
+    Overrides are read from ``[tool.doc-checks]`` in pyproject.toml first,
+    then from ``.doc-checks.yaml`` (which wins when both define a key — the
+    dedicated file is the more specific intent).
+
+    The merge is per check section: keys set in an override replace the
     corresponding default keys, while unspecified keys keep their defaults.
     This lets a consumer add e.g. ``make_refs.ignore_targets`` without having
     to restate the default scan globs.
     """
     config: dict[str, Any] = yaml.safe_load(_DEFAULT_CONFIG_PATH.read_text())
-    override_path = repo_root() / CONFIG_FILENAME
+    root = repo_root()
+    _merge_sections(config, _load_pyproject_overrides(root))
+    override_path = root / CONFIG_FILENAME
     if override_path.exists():
-        override: dict[str, Any] = yaml.safe_load(override_path.read_text()) or {}
-        for section, values in override.items():
-            if isinstance(values, dict) and isinstance(config.get(section), dict):
-                config[section] = {**config[section], **values}
-            else:
-                config[section] = values
+        _merge_sections(config, yaml.safe_load(override_path.read_text()) or {})
     return config
 
 
