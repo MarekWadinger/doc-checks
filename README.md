@@ -18,7 +18,7 @@ this package into an isolated environment, no manual setup needed
 
 ```yaml
 repos:
-  - repo: <git url of this repo>
+  - repo: https://github.com/MarekWadinger/doc-checks
     rev: v0.1.0  # use the latest tag
     hooks:
       - id: doc-check-make-refs   # requires a Makefile at your repo root
