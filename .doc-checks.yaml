@@ -1,0 +1,7 @@
+# Project-local overrides, merged per-section over the packaged defaults in
+# src/doc_checks/config.yaml. This repo's own override doubles as an example
+# of the mechanism consumers use.
+py_imports:
+  # Validate `doc_checks` imports in markdown fences against this repo.
+  project_packages:
+    - doc_checks

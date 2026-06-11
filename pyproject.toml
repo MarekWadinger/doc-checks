@@ -1,13 +1,26 @@
 [project]
 name = "doc-checks"
 version = "0.1.0"
-requires-python = ">=3.14"
+description = "Self-healing documentation checks, distributed as pre-commit hooks"
+# ``Path.full_match`` (used for exclude-glob filtering) requires Python 3.13.
+requires-python = ">=3.13"
 dependencies = [
     "pydantic>=2.13.4",
     "pyyaml>=6.0.3",
 ]
 
+[project.scripts]
+doc-check = "doc_checks.runner:main"
+doc-check-make-refs = "doc_checks.check_make_refs:main"
+doc-check-cd-refs = "doc_checks.check_cd_refs:main"
+doc-check-py-imports = "doc_checks.check_py_imports:main"
+doc-check-mermaid = "doc_checks.check_mermaid:main"
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

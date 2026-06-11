@@ -1,5 +1,6 @@
-# Documentation consistency checker configuration.
-# Project-specific values live here so the checker scripts stay generic.
+# Default configuration, shipped with the package. Consumers override any
+# key per repo via a `.doc-checks.yaml` at their repo root — sections are
+# merged key-by-key over these defaults (see doc_checks.get_config).
 
 cd_refs:
   # Markdown files to scan for stale `cd <path>` references
@@ -49,8 +50,11 @@ py_imports:
     - "CHANGELOG.md"
     - "**/CHANGELOG.md"
   # Top-level packages whose imports we statically validate. Anything outside
-  # these (third-party, stdlib) is left to ``pyproject.toml`` / dependency tooling.
+  # these (third-party, stdlib) is left to ``pyproject.toml`` / dependency
+  # tooling. Override per repo via `.doc-checks.yaml` with your package names.
   project_packages:
+    - src
+    - lib
     - scripts
 
 make_refs:

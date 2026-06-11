@@ -10,7 +10,7 @@ opt-in for contributors with Node/mmdc; CI runs with mmdc installed and
 will catch regressions there.
 
 Usage:
-    python -m scripts.doc_checks.check_mermaid
+    python -m doc_checks.check_mermaid
 """
 
 from __future__ import annotations
@@ -26,9 +26,9 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from scripts.doc_checks import CheckResult, get_config
+from doc_checks import CheckResult, get_config, repo_root
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = repo_root()
 
 _cfg = get_config().get("mermaid", {})
 SCAN_GLOBS: list[str] = _cfg.get("scan_globs", ["**/*.md"])
@@ -107,7 +107,7 @@ def _iter_markdown_files() -> list[Path]:
             if not p.is_file() or p in seen:
                 continue
             rel = p.relative_to(REPO_ROOT)
-            if any(rel.match(pat) for pat in EXCLUDE_GLOBS):
+            if any(rel.full_match(pat) for pat in EXCLUDE_GLOBS):
                 continue
             seen.add(p)
             out.append(p)
@@ -125,7 +125,7 @@ def _resolve_hook_files(arg_files: list[str]) -> list[Path]:
             rel = path.relative_to(REPO_ROOT)
         except ValueError:
             continue
-        if any(rel.match(pat) for pat in EXCLUDE_GLOBS):
+        if any(rel.full_match(pat) for pat in EXCLUDE_GLOBS):
             continue
         out.append(path)
     return out

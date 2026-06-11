@@ -1,23 +1,26 @@
-.PHONY: install doc-check doc-check-make-refs doc-check-cd-refs doc-check-py-imports doc-check-mermaid pre-commit
+.PHONY: install doc-check doc-check-make-refs doc-check-cd-refs doc-check-py-imports doc-check-mermaid pre-commit build
 
 install:
 	uv sync --all-groups
 	uv run pre-commit install
 
 doc-check:
-	uv run python -m scripts.doc_checks.runner
+	uv run doc-check
 
 doc-check-make-refs:
-	uv run python -m scripts.doc_checks.check_make_refs
+	uv run doc-check-make-refs
 
 doc-check-cd-refs:
-	uv run python -m scripts.doc_checks.check_cd_refs
+	uv run doc-check-cd-refs
 
 doc-check-py-imports:
-	uv run python -m scripts.doc_checks.check_py_imports
+	uv run doc-check-py-imports
 
 doc-check-mermaid:
-	uv run python -m scripts.doc_checks.check_mermaid
+	uv run doc-check-mermaid
 
 pre-commit:
 	uv run pre-commit run --all-files
+
+build:
+	uv build

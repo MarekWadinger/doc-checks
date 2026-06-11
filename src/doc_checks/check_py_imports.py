@@ -20,7 +20,7 @@ validated — they're version-pinned in ``pyproject.toml`` and a missing
 external dep would surface there first.
 
 Usage:
-    python -m scripts.doc_checks.check_py_imports
+    python -m doc_checks.check_py_imports
 """
 
 from __future__ import annotations
@@ -34,9 +34,16 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from scripts.doc_checks import CheckResult, get_config
+from doc_checks import CheckResult, get_config, repo_root
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = repo_root()
+
+# ``find_spec`` resolves against sys.path. Installed as a pre-commit hook this
+# package runs from pre-commit's isolated venv, so the consumer repo's own
+# packages aren't importable unless its root is added explicitly (this mirrors
+# the implicit cwd-on-sys.path behavior of the old ``python -m`` invocation).
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 _cfg = get_config().get("py_imports", {})
 SCAN_GLOBS: list[str] = _cfg.get("scan_globs", ["**/*.md"])
@@ -231,7 +238,7 @@ def _iter_markdown_files() -> list[Path]:
             if not p.is_file() or p in seen:
                 continue
             rel = p.relative_to(REPO_ROOT)
-            if any(rel.match(pat) for pat in EXCLUDE_GLOBS):
+            if any(rel.full_match(pat) for pat in EXCLUDE_GLOBS):
                 continue
             seen.add(p)
             out.append(p)
@@ -254,7 +261,7 @@ def _resolve_hook_files(arg_files: list[str]) -> list[Path]:
             rel = path.relative_to(REPO_ROOT)
         except ValueError:
             continue
-        if any(rel.match(pat) for pat in EXCLUDE_GLOBS):
+        if any(rel.full_match(pat) for pat in EXCLUDE_GLOBS):
             continue
         out.append(path)
     return out

@@ -1,0 +1,43 @@
+# Hook definitions for consumers. Use from another repo's .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: <git url of this repo>
+#       rev: v0.1.0
+#       hooks:
+#         - id: doc-check-make-refs
+#         - id: doc-check-cd-refs
+#         - id: doc-check-py-imports
+#         - id: doc-check-mermaid
+#
+# Defaults (scan globs, excludes, ignored targets) can be overridden per repo
+# in a `.doc-checks.yaml` at the consumer repo root — see README.
+- id: doc-check-make-refs
+  name: doc-check-make-refs (stale `make` targets in markdown)
+  entry: doc-check-make-refs
+  language: python
+  # Re-run when either side of the comparison changes (markdown content
+  # or the set of defined targets in the Makefile).
+  files: '(\.md|\.markdown|^Makefile)$'
+  pass_filenames: true
+  stages: [pre-commit]
+- id: doc-check-cd-refs
+  name: doc-check-cd-refs (stale `cd <path>` in markdown)
+  entry: doc-check-cd-refs
+  language: python
+  files: '\.(md|markdown)$'
+  pass_filenames: true
+  stages: [pre-commit]
+- id: doc-check-py-imports
+  name: doc-check-py-imports (stale project-local imports in markdown fences)
+  entry: doc-check-py-imports
+  language: python
+  files: '\.(md|markdown)$'
+  pass_filenames: true
+  stages: [pre-commit]
+- id: doc-check-mermaid
+  name: doc-check-mermaid (mermaid syntax via mmdc, skipped if mmdc missing)
+  entry: doc-check-mermaid
+  language: python
+  files: '\.(md|markdown)$'
+  pass_filenames: true
+  stages: [pre-commit]

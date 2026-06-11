@@ -1,9 +1,9 @@
 """Doc Check Runner — runs all self-healing documentation checks and reports results.
 
 Usage:
-    python -m scripts.doc_checks.runner            # Run all checks
-    python -m scripts.doc_checks.runner make_refs  # Run specific check
-    python -m scripts.doc_checks.runner --ci       # CI mode (exit 1 on any failure)
+    python -m doc_checks.runner            # Run all checks
+    python -m doc_checks.runner make_refs  # Run specific check
+    python -m doc_checks.runner --ci       # CI mode (exit 1 on any failure)
 """
 
 import argparse
@@ -13,7 +13,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from scripts.doc_checks import CheckResult, get_config
+from doc_checks import CheckResult, get_config, repo_root
 
 _cfg = get_config()["runner"]
 LABELS: dict[str, str] = _cfg["labels"]
@@ -26,7 +26,7 @@ def _discover_checks() -> dict[str, Callable[..., CheckResult]]:
     found: dict[str, Callable[..., CheckResult]] = {}
     for path in sorted(here.glob("check_*.py")):
         name = path.stem[len("check_") :]
-        module = importlib.import_module(f"scripts.doc_checks.{path.stem}")
+        module = importlib.import_module(f"doc_checks.{path.stem}")
         if hasattr(module, "run"):
             found[name] = module.run
 

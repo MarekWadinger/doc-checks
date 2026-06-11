@@ -1,11 +1,13 @@
-# Documentation consistency hooks.
+# This repo's own hooks. ``repo: local`` does not pip-install the project
+# (pre-commit only does that for remote repos consumed via
+# .pre-commit-hooks.yaml), so we run the console scripts through uv instead.
 # Install with: uv run pre-commit install
 repos:
   - repo: local
     hooks:
       - id: doc-check-make-refs
         name: doc-check-make-refs (stale `make` targets in markdown)
-        entry: uv run python -m scripts.doc_checks.check_make_refs
+        entry: uv run doc-check-make-refs
         language: system
         # Re-run when either side of the comparison changes (markdown content
         # or the set of defined targets in the Makefile).
@@ -14,21 +16,21 @@ repos:
         stages: [pre-commit]
       - id: doc-check-cd-refs
         name: doc-check-cd-refs (stale `cd <path>` in markdown)
-        entry: uv run python -m scripts.doc_checks.check_cd_refs
+        entry: uv run doc-check-cd-refs
         language: system
         files: '\.(md|markdown)$'
         pass_filenames: true
         stages: [pre-commit]
       - id: doc-check-py-imports
         name: doc-check-py-imports (stale project-local imports in markdown fences)
-        entry: uv run python -m scripts.doc_checks.check_py_imports
+        entry: uv run doc-check-py-imports
         language: system
         files: '\.(md|markdown)$'
         pass_filenames: true
         stages: [pre-commit]
       - id: doc-check-mermaid
         name: doc-check-mermaid (mermaid syntax via mmdc, skipped if mmdc missing)
-        entry: uv run python -m scripts.doc_checks.check_mermaid
+        entry: uv run doc-check-mermaid
         language: system
         files: '\.(md|markdown)$'
         pass_filenames: true

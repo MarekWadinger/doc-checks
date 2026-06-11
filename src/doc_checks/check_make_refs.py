@@ -6,7 +6,7 @@ files for ``make <target>`` usages **inside code spans or fenced code blocks onl
 target is reported with file:line so it can be fixed or removed.
 
 Usage:
-    python -m scripts.doc_checks.check_make_refs
+    python -m doc_checks.check_make_refs
 """
 
 from __future__ import annotations
@@ -20,9 +20,9 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from scripts.doc_checks import CheckResult, get_config
+from doc_checks import CheckResult, get_config, repo_root
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = repo_root()
 
 _cfg = get_config().get("make_refs", {})
 MAKEFILE_PATHS: list[str] = _cfg.get("makefiles", ["Makefile"])
@@ -219,7 +219,7 @@ def _iter_markdown_files() -> Iterator[Path]:
             if not path.is_file():
                 continue
             rel = path.relative_to(REPO_ROOT)
-            if any(rel.match(pat) for pat in EXCLUDE_GLOBS):
+            if any(rel.full_match(pat) for pat in EXCLUDE_GLOBS):
                 continue
             if path in seen:
                 continue
@@ -283,7 +283,7 @@ def _resolve_hook_files(arg_files: list[str]) -> list[Path] | None:
         # passes explicit changed files directly to this hook path, which previously bypassed
         # the configured exclusions (e.g. CHANGELOG.md is intentionally excluded but kept
         # firing on every changelog edit).
-        if any(rel.match(pat) for pat in EXCLUDE_GLOBS):
+        if any(rel.full_match(pat) for pat in EXCLUDE_GLOBS):
             continue
         out.append(path)
     if rescan_all:
@@ -328,7 +328,7 @@ def run(files: list[str] | None = None) -> CheckResult:
         "",
         "Fix: update the docs to use a real target, or add the target to the Makefile.",
         "If the reference is intentional (e.g. third-party project), add it to",
-        "`scripts/doc_checks/config.yaml` under `make_refs.ignore_targets`.",
+        "`make_refs.ignore_targets` in `.doc-checks.yaml` at your repo root.",
     ]
     return CheckResult(
         passed=False,
