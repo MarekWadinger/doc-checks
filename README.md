@@ -19,7 +19,7 @@ this package into an isolated environment, no manual setup needed
 ```yaml
 repos:
   - repo: <git url of this repo>
-    rev: v0.1.0
+    rev: v0.1.0  # use the latest tag
     hooks:
       - id: doc-check-make-refs   # requires a Makefile at your repo root
       - id: doc-check-cd-refs
@@ -30,10 +30,105 @@ repos:
 Pick only the hooks that fit: `doc-check-make-refs` fails when it finds no
 Makefile targets to validate against, so skip it in repos without a Makefile.
 
+To bypass a hook for one commit (e.g. a false positive you'll fix separately):
+
+```bash
+SKIP=doc-check-mermaid git commit -m "..."
+```
+
+### Hooks
+
+#### `doc-check-make-refs`
+
+Fails when markdown mentions `make <target>` and the target is not defined in
+any configured Makefile. Config keys (`make_refs:`): `makefiles`,
+`ignore_targets`, `scan_globs`, `exclude_globs`.
+
+#### `doc-check-cd-refs`
+
+Fails when markdown contains `cd <path>` and the directory does not exist in
+the repo. Paths under `ignore_prefixes` (default: `/Users/`, `/home/`) are
+skipped as machine-specific. Config keys (`cd_refs:`): `ignore_prefixes`,
+`scan_globs`, `exclude_globs`.
+
+#### `doc-check-py-imports`
+
+Fails when a Python code fence in markdown imports a project-local module
+that no longer resolves. Only top-level packages listed in `project_packages`
+(default: `src`, `lib`, `scripts`) are validated — third-party and stdlib
+imports are ignored. Config keys (`py_imports:`): `project_packages`,
+`scan_globs`, `exclude_globs`.
+
+#### `doc-check-mermaid`
+
+Validates ` ```mermaid ` fences with `mmdc`
+(`npm install -g @mermaid-js/mermaid-cli`). Silently passes when `mmdc` is
+not installed, so contributors without a Node toolchain aren't blocked; set
+`require_mmdc: true` or `DOC_CHECK_MERMAID_REQUIRE=1` (e.g. in CI) to fail
+instead. Config keys (`mermaid:`): `require_mmdc`, `scan_globs`,
+`exclude_globs`.
+
+All hooks share `scan_globs` / `exclude_globs`; `CHANGELOG.md` is excluded by
+default because its entries are historical and may legitimately reference
+things that no longer exist.
+
+### CI
+
+Run the same hooks in CI so drift can't merge:
+
+```yaml
+# .github/workflows/doc-checks.yml
+jobs:
+  doc-checks:
+    runs-on: ubuntu-latest
+    env:
+      DOC_CHECK_MERMAID_REQUIRE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+      - run: npm install -g @mermaid-js/mermaid-cli
+      - uses: pre-commit/action@v3.0.1
+```
+
 For broken-link checking, pair these with the official
 [lychee](https://lychee.cli.rs) hook or a local one (see this repo's
 [`.pre-commit-config.yaml`](.pre-commit-config.yaml) and
 [`.lychee.toml`](.lychee.toml) for a working offline-mode setup).
+
+### Changelog enforcement
+
+There is deliberately no `doc-check-changelog` hook. Keeping a changelog is
+better handled by [commitizen](https://commitizen-tools.github.io/commitizen/):
+enforce [conventional commits](https://www.conventionalcommits.org) at commit
+time, then *generate* `CHANGELOG.md` from the commit history at release time —
+nobody hand-edits it, so there is nothing to drift.
+
+```yaml
+# .pre-commit-config.yaml — reject non-conventional commit messages
+repos:
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.8.3
+    hooks:
+      - id: commitizen          # validates the message of the commit being made
+      - id: commitizen-branch   # validates all commits on push (CI-friendly)
+        stages: [pre-push]
+```
+
+```toml
+# pyproject.toml
+[tool.commitizen]
+version_provider = "pep621"   # read/bump version from [project].version
+update_changelog_on_bump = true
+```
+
+Releasing then regenerates the changelog and tags in one step:
+
+```bash
+cz bump --changelog   # bumps version, rewrites CHANGELOG.md, creates the tag
+```
+
+Since the generated `CHANGELOG.md` is historical, exclude it from the other
+doc checks (the packaged defaults already do).
 
 ### Per-repo configuration
 
