@@ -72,46 +72,28 @@ All hooks share `scan_globs` / `exclude_globs`; `CHANGELOG.md` is excluded by
 default because its entries are historical and may legitimately reference
 things that no longer exist.
 
-### CI
+#### Pair with: `lychee` (broken links)
 
-Run the same hooks in CI so drift can't merge:
-
-```yaml
-# .github/workflows/doc-checks.yml
-jobs:
-  doc-checks:
-    runs-on: ubuntu-latest
-    env:
-      DOC_CHECK_MERMAID_REQUIRE: "1"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: npm install -g @mermaid-js/mermaid-cli
-      - uses: pre-commit/action@v3.0.1
-```
-
-For broken-link checking, pair these with the official
-[lychee](https://lychee.cli.rs) hook or a local one (see this repo's
+Link checking is out of scope here — pair the hooks above with the official
+[lychee](https://lychee.cli.rs) hook or a local one. See this repo's
 [`.pre-commit-config.yaml`](.pre-commit-config.yaml) and
-[`.lychee.toml`](.lychee.toml) for a working offline-mode setup).
+[`.lychee.toml`](.lychee.toml) for a working offline-mode setup (external
+URLs skipped locally, validated in CI).
 
-### Changelog enforcement
+#### Pair with: `commitizen` (changelog)
 
-There is deliberately no `doc-check-changelog` hook. Keeping a changelog is
-better handled by [commitizen](https://commitizen-tools.github.io/commitizen/):
-enforce [conventional commits](https://www.conventionalcommits.org) at commit
-time, then *generate* `CHANGELOG.md` from the commit history at release time —
-nobody hand-edits it, so there is nothing to drift.
+There is deliberately no `doc-check-changelog` hook. Enforce
+[conventional commits](https://www.conventionalcommits.org) with
+[commitizen](https://commitizen-tools.github.io/commitizen/), then *generate*
+`CHANGELOG.md` from the commit history — nobody hand-edits it, so there is
+nothing to drift:
 
 ```yaml
-# .pre-commit-config.yaml — reject non-conventional commit messages
-repos:
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.8.3
     hooks:
-      - id: commitizen          # validates the message of the commit being made
-      - id: commitizen-branch   # validates all commits on push (CI-friendly)
-        stages: [pre-push]
+      - id: commitizen          # rejects non-conventional commit messages
+        stages: [commit-msg]
 ```
 
 ```toml
@@ -121,14 +103,9 @@ version_provider = "pep621"   # read/bump version from [project].version
 update_changelog_on_bump = true
 ```
 
-Releasing then regenerates the changelog and tags in one step:
-
-```bash
-cz bump --changelog   # bumps version, rewrites CHANGELOG.md, creates the tag
-```
-
-Since the generated `CHANGELOG.md` is historical, exclude it from the other
-doc checks (the packaged defaults already do).
+`cz bump --changelog` then bumps the version, rewrites `CHANGELOG.md`, and
+tags in one step — this repo automates exactly that on push to main (see
+[`.github/workflows/bump.yml`](.github/workflows/bump.yml)).
 
 ### Per-repo configuration
 
@@ -146,6 +123,24 @@ mermaid:
 ```
 
 This repo's own [`.doc-checks.yaml`](.doc-checks.yaml) is a working example.
+
+### CI
+
+Run the same hooks in CI so drift can't merge:
+
+```yaml
+# .github/workflows/doc-checks.yml
+jobs:
+  doc-checks:
+    runs-on: ubuntu-latest
+    env:
+      DOC_CHECK_MERMAID_REQUIRE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+      - run: npm install -g @mermaid-js/mermaid-cli
+      - uses: pre-commit/action@v3.0.1
+```
 
 ## Developing this repo
 
