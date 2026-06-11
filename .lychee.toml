@@ -1,0 +1,52 @@
+# lychee configuration — broken link / file-existence audit for markdown docs.
+# Docs: https://lychee.cli.rs/usage/config/
+#
+# We run lychee in offline mode by default (``--offline``) so external URLs
+# are not fetched: this keeps the pre-commit hook fast, deterministic, and
+# usable on flights/airgapped boxes. A CI-only job can flip ``offline`` to
+# ``false`` to additionally exercise public URLs.
+
+# Don't follow ``http(s)://`` schemes at all in the default hook run. Local
+# file links ([`docs/foo.md`](docs/foo.md)) are still validated.
+offline = true
+
+# Anchor / fragment checking is **disabled**. lychee 0.24's heading-to-slug
+# conversion does not match GitHub's: it includes trailing HTML comments
+# (e.g. ``<!-- omit in toc -->`` markers consumed by TOC plugins) in the
+# slug, producing false-positive "fragment not found" errors against valid
+# links. Until upstream matches GitHub's behaviour, we restrict the check to
+# file existence, which is where most reader pain originates anyway.
+include_fragments = "none"
+
+# Skip files that aren't worth checking:
+#   * generated/binary content
+#   * vendored or cached packages
+#   * historical changelog (would tie its hands every time a file is moved)
+exclude_path = [
+    ".venv",
+    "node_modules",
+    ".pytest_cache",
+    ".ruff_cache",
+    "CHANGELOG.md",
+]
+
+# URL patterns to ignore even when ``offline`` is flipped off later.
+exclude = [
+    "^http://localhost",
+    "^https://localhost",
+    "^http://127\\.0\\.0\\.1",
+    "^http://0\\.0\\.0\\.0",
+    "^postgres://",
+    "^postgresql://",
+    "^redis://",
+]
+
+# Accept slow servers up to 10s once online checking is enabled; irrelevant
+# in offline mode but documented for the future.
+max_concurrency = 8
+timeout = 10
+retry_wait_time = 2
+max_retries = 1
+
+# Fail on missing files; 403/429 are reachable-but-gated, not broken.
+accept = ["200..=299", "403", "429"]

@@ -1,0 +1,92 @@
+# Documentation consistency checker configuration.
+# Project-specific values live here so the checker scripts stay generic.
+
+cd_refs:
+  # Markdown files to scan for stale `cd <path>` references
+  scan_globs:
+    - "**/*.md"
+    - "**/*.markdown"
+  exclude_globs:
+    - ".venv/**"
+    - "node_modules/**"
+    - ".pytest_cache/**"
+    - ".ruff_cache/**"
+    # CHANGELOG entries are historical: they may legitimately mention a path
+    # that existed at the time of release but has since moved.
+    - "CHANGELOG.md"
+    - "**/CHANGELOG.md"
+  # ``cd`` arguments starting with any of these prefixes are skipped — they
+  # point at locations outside the repo (system dirs, user-supplied paths).
+  ignore_prefixes:
+    - "/Users/"
+    - "/home/"
+
+mermaid:
+  scan_globs:
+    - "**/*.md"
+    - "**/*.markdown"
+  exclude_globs:
+    - ".venv/**"
+    - "node_modules/**"
+    - ".pytest_cache/**"
+    - ".ruff_cache/**"
+    - "CHANGELOG.md"
+    - "**/CHANGELOG.md"
+  # When false (default) the check silently passes if ``mmdc`` is not on PATH,
+  # so contributors without the Node toolchain aren't blocked. CI flips this
+  # (or sets DOC_CHECK_MERMAID_REQUIRE=1) to demand validation.
+  require_mmdc: false
+
+py_imports:
+  scan_globs:
+    - "**/*.md"
+    - "**/*.markdown"
+  exclude_globs:
+    - ".venv/**"
+    - "node_modules/**"
+    - ".pytest_cache/**"
+    - ".ruff_cache/**"
+    - "CHANGELOG.md"
+    - "**/CHANGELOG.md"
+  # Top-level packages whose imports we statically validate. Anything outside
+  # these (third-party, stdlib) is left to ``pyproject.toml`` / dependency tooling.
+  project_packages:
+    - scripts
+
+make_refs:
+  # Makefiles that define legitimate targets (relative to repo root)
+  makefiles:
+    - Makefile
+  # Markdown files to scan for stale `make <target>` references
+  scan_globs:
+    - "**/*.md"
+    - "**/*.markdown"
+  # Paths to skip (glob patterns relative to repo root)
+  exclude_globs:
+    - ".venv/**"
+    - "node_modules/**"
+    - ".pytest_cache/**"
+    - ".ruff_cache/**"
+    # CHANGELOG entries are historical: they may legitimately mention a target
+    # that existed at the time of release but has since been renamed/removed.
+    - "CHANGELOG.md"
+    - "**/CHANGELOG.md"
+  # Targets that should be treated as valid even if not in the Makefile.
+  # Use sparingly — only for genuinely external references (e.g. mentioning
+  # a target in a third-party project's Makefile within an example).
+  ignore_targets: []
+
+runner:
+  # Execution order for checks — cheapest/fastest first for effective fail-fast behaviour.
+  # Any check_*.py module not listed here is auto-appended in alphabetical order.
+  order:
+    - make_refs
+    - cd_refs
+    - py_imports
+    - mermaid
+  # Human-readable labels for console output
+  labels:
+    make_refs: Make Ref Audit
+    cd_refs: CD Ref Audit
+    py_imports: Py Import Audit
+    mermaid: Mermaid Audit

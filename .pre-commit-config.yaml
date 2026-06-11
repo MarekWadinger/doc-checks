@@ -1,0 +1,50 @@
+# Documentation consistency hooks.
+# Install with: uv run pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: doc-check-make-refs
+        name: doc-check-make-refs (stale `make` targets in markdown)
+        entry: uv run python -m scripts.doc_checks.check_make_refs
+        language: system
+        # Re-run when either side of the comparison changes (markdown content
+        # or the set of defined targets in the Makefile).
+        files: '(\.md|\.markdown|^Makefile)$'
+        pass_filenames: true
+        stages: [pre-commit]
+      - id: doc-check-cd-refs
+        name: doc-check-cd-refs (stale `cd <path>` in markdown)
+        entry: uv run python -m scripts.doc_checks.check_cd_refs
+        language: system
+        files: '\.(md|markdown)$'
+        pass_filenames: true
+        stages: [pre-commit]
+      - id: doc-check-py-imports
+        name: doc-check-py-imports (stale project-local imports in markdown fences)
+        entry: uv run python -m scripts.doc_checks.check_py_imports
+        language: system
+        files: '\.(md|markdown)$'
+        pass_filenames: true
+        stages: [pre-commit]
+      - id: doc-check-mermaid
+        name: doc-check-mermaid (mermaid syntax via mmdc, skipped if mmdc missing)
+        entry: uv run python -m scripts.doc_checks.check_mermaid
+        language: system
+        files: '\.(md|markdown)$'
+        pass_filenames: true
+        stages: [pre-commit]
+      - id: lychee
+        name: lychee (broken internal links in markdown)
+        # Local hook calling the lychee binary. ``--offline`` skips external
+        # URLs so contributors don't get false-positives on flaky third-party
+        # hosts; CI can re-run without ``--offline`` for full coverage.
+        entry: lychee
+        args:
+          - --config
+          - .lychee.toml
+          - --no-progress
+          - --offline
+        language: system
+        files: '\.(md|markdown)$'
+        pass_filenames: true
+        stages: [pre-commit]
