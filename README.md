@@ -1,5 +1,9 @@
 # doc-checks
 
+<p align="center">
+  <img src="assets/logo.png" alt="doc-checks logo" width="160">
+</p>
+
 Self-healing documentation checks, distributed as [pre-commit](https://pre-commit.com)
 hooks. They fail the commit when markdown docs drift from reality:
 
