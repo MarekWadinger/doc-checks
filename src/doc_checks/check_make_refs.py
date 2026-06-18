@@ -303,16 +303,33 @@ def run(files: list[str] | None = None) -> CheckResult:
     target_files = _resolve_hook_files(files) if files else None
     stale, known = find_stale_refs(target_files)
 
-    if not known:
-        return CheckResult(
-            passed=False,
-            message="No Makefile targets found — cannot validate references.",
-            details=[f"Looked at: {', '.join(MAKEFILE_PATHS)}"],
-        )
-
+    # No references to validate ⇒ nothing can be stale. This must be checked
+    # *before* ``not known`` so a repo with no Makefile and no ``make`` refs
+    # passes cleanly (e.g. projects using ``just`` / ``task`` / npm scripts).
     if not stale:
         scope = f"{len(target_files)} file(s)" if target_files is not None else "all docs"
         return CheckResult(passed=True, message=f"No stale `make` references in {scope}.")
+
+    # References exist but there is no Makefile to validate them against. Every
+    # ref is "stale" by default here; report it as a configuration gap rather
+    # than as drift, since the fix is to add a Makefile or ignore the refs.
+    if not known:
+        details = [
+            f"Looked at: {', '.join(MAKEFILE_PATHS)}",
+            "",
+            f"Found {len(stale)} `make` reference(s) but no Makefile targets to validate against:",
+        ]
+        last_file: str | None = None
+        for ref in sorted(stale, key=lambda r: (r.file, r.line, r.target)):
+            if ref.file != last_file:
+                details.append(f"  {ref.file}:")
+                last_file = ref.file
+            details.append(f"    line {ref.line}: `make {ref.target}`")
+        return CheckResult(
+            passed=False,
+            message="`make` references found but no Makefile to validate against.",
+            details=details,
+        )
 
     details: list[str] = [
         f"Found {len(stale)} stale `make` reference(s):",
