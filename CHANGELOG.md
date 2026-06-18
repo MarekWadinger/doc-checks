@@ -1,3 +1,10 @@
+## v0.2.1 (2026-06-18)
+
+### Fix
+
+- don't flag clone-then-cd install idiom in cd-refs check
+- pass make-refs check when no refs exist and no Makefile
+
 ## v0.2.0 (2026-06-11)
 
 ### Feat
