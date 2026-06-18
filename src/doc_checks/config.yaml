@@ -80,6 +80,33 @@ make_refs:
   # a target in a third-party project's Makefile within an example).
   ignore_targets: []
 
+trees:
+  # Markdown files to scan for ASCII project-trees
+  scan_globs:
+    - "**/*.md"
+    - "**/*.markdown"
+  exclude_globs:
+    - ".venv/**"
+    - "node_modules/**"
+    - ".pytest_cache/**"
+    - ".ruff_cache/**"
+    # CHANGELOG entries are historical: a tree may legitimately depict a layout
+    # that existed at the time of release but has since changed.
+    - "CHANGELOG.md"
+    - "**/CHANGELOG.md"
+  # Branch-line names treated as placeholders rather than real paths.
+  ignore_names:
+    - "..."
+    - "…"
+    - "etc"
+    - "etc."
+  # Directories never walked when collecting existing basenames.
+  prune_dirs:
+    - ".git"
+    - "node_modules"
+    - ".venv"
+    - "__pycache__"
+
 runner:
   # Execution order for checks — cheapest/fastest first for effective fail-fast behaviour.
   # Any check_*.py module not listed here is auto-appended in alphabetical order.
@@ -87,10 +114,12 @@ runner:
     - make_refs
     - cd_refs
     - py_imports
+    - trees
     - mermaid
   # Human-readable labels for console output
   labels:
     make_refs: Make Ref Audit
     cd_refs: CD Ref Audit
     py_imports: Py Import Audit
+    trees: Tree Ref Audit
     mermaid: Mermaid Audit

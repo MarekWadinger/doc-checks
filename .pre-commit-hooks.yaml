@@ -7,6 +7,7 @@
 #         - id: doc-check-make-refs
 #         - id: doc-check-cd-refs
 #         - id: doc-check-py-imports
+#         - id: doc-check-trees
 #         - id: doc-check-mermaid
 #
 # Defaults (scan globs, excludes, ignored targets) can be overridden per repo
@@ -30,6 +31,13 @@
 - id: doc-check-py-imports
   name: doc-check-py-imports (stale project-local imports in markdown fences)
   entry: doc-check-py-imports
+  language: python
+  files: '\.(md|markdown)$'
+  pass_filenames: true
+  stages: [pre-commit]
+- id: doc-check-trees
+  name: doc-check-trees (stale paths in ASCII project-trees in markdown)
+  entry: doc-check-trees
   language: python
   files: '\.(md|markdown)$'
   pass_filenames: true
