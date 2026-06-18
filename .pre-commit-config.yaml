@@ -33,6 +33,13 @@ repos:
         files: '\.(md|markdown)$'
         pass_filenames: true
         stages: [pre-commit]
+      - id: doc-check-trees
+        name: doc-check-trees (stale paths in ASCII project-trees in markdown)
+        entry: uv run doc-check-trees
+        language: system
+        files: '\.(md|markdown)$'
+        pass_filenames: true
+        stages: [pre-commit]
       - id: doc-check-mermaid
         name: doc-check-mermaid (mermaid syntax via mmdc, skipped if mmdc missing)
         entry: uv run doc-check-mermaid

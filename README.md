@@ -12,6 +12,7 @@ hooks. They fail the commit when markdown docs drift from reality:
 | `doc-check-make-refs` | `make <target>` references in markdown that no longer exist in the Makefile |
 | `doc-check-cd-refs` | `cd <path>` references pointing at directories that no longer exist |
 | `doc-check-py-imports` | Project-local imports in markdown code fences that no longer resolve |
+| `doc-check-trees` | ASCII project-tree entries in markdown pointing at files that no longer exist |
 | `doc-check-mermaid` | Broken Mermaid diagram syntax (via `mmdc`, skipped if not installed) |
 
 ## Use in your project
@@ -28,6 +29,7 @@ repos:
       - id: doc-check-make-refs   # requires a Makefile at your repo root
       - id: doc-check-cd-refs
       - id: doc-check-py-imports
+      - id: doc-check-trees
       - id: doc-check-mermaid
 ```
 
@@ -62,6 +64,17 @@ that no longer resolves. Only top-level packages listed in `project_packages`
 (default: `src`, `lib`, `scripts`) are validated — third-party and stdlib
 imports are ignored. Config keys (`py_imports:`): `project_packages`,
 `scan_globs`, `exclude_globs`.
+
+#### `doc-check-trees`
+
+Fails when an ASCII project-tree in markdown lists a file or directory whose
+basename no longer exists anywhere in the repo. Detects box-drawing trees
+(`├──`, `└──`, `│`) and the common ASCII renderings (`|--`, `` `-- ``, `+--`).
+Only branch lines are validated, and matching is by basename — a renamed
+parent directory won't trip the check, a deleted leaf will. Placeholders
+(`...`, `etc.`), wildcards (`*.py`), and `..` parents are skipped, as are
+`ls -F` / `tree -F` type indicators. Config keys (`trees:`): `ignore_names`,
+`prune_dirs`, `scan_globs`, `exclude_globs`.
 
 #### `doc-check-mermaid`
 

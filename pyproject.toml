@@ -14,13 +14,18 @@ doc-check = "doc_checks.runner:main"
 doc-check-make-refs = "doc_checks.check_make_refs:main"
 doc-check-cd-refs = "doc_checks.check_cd_refs:main"
 doc-check-py-imports = "doc_checks.check_py_imports:main"
+doc-check-trees = "doc_checks.check_trees:main"
 doc-check-mermaid = "doc_checks.check_mermaid:main"
 
 [dependency-groups]
 dev = [
     "commitizen>=4.16.3",
     "pre-commit>=4.6.0",
+    "pytest>=8.3.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"

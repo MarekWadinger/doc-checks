@@ -40,4 +40,14 @@ jobs:
           pre-commit try-repo . doc-check-make-refs --all-files
           pre-commit try-repo . doc-check-cd-refs --all-files
           pre-commit try-repo . doc-check-py-imports --all-files
+          pre-commit try-repo . doc-check-trees --all-files
           pre-commit try-repo . doc-check-mermaid --all-files
+
+  # Unit tests for the check implementations.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-groups
+      - run: uv run pytest
