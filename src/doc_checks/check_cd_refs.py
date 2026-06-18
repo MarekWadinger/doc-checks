@@ -50,6 +50,42 @@ _CD_RE = re.compile(
 # outside the repo and are irrelevant to documentation drift.
 _DYNAMIC_PREFIXES = ("$", "~", "/tmp", "/var", "/etc", "/usr", "/opt", "..")
 
+# ``git clone <url> [dir]`` — the directory entered next is created by the
+# clone and therefore does not exist in-tree, so a following ``cd`` to it must
+# not be flagged (the universal clone-then-cd install idiom). See issue #2.
+_GIT_CLONE_RE = re.compile(r"(?<![\w./-])git\s+clone\b(?P<args>[^\n;&|#]*)")
+
+
+def _looks_like_repo(token: str) -> bool:
+    """Heuristic: does this token look like a clonable repository URL?"""
+    return "://" in token or token.startswith("git@") or token.endswith(".git") or (":" in token and "/" in token)
+
+
+def _clone_dirs(segment: str) -> set[str]:
+    """Directory names created by ``git clone`` commands in one shell segment.
+
+    Returns the explicit target dir when given (``git clone <url> <dir>``),
+    otherwise the URL basename with any trailing ``.git`` stripped. Flags such
+    as ``--depth 1`` are tolerated by locating the URL token by shape rather
+    than by position.
+    """
+    dirs: set[str] = set()
+    for m in _GIT_CLONE_RE.finditer(segment):
+        tokens = m.group("args").split()
+        url_idx = next((i for i, t in enumerate(tokens) if _looks_like_repo(t)), None)
+        if url_idx is None:
+            continue
+        explicit = next((t for t in tokens[url_idx + 1 :] if not t.startswith("-")), None)
+        if explicit is not None:
+            dirs.add(explicit.rstrip("/"))
+            continue
+        name = tokens[url_idx].rstrip("/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+        if name.endswith(".git"):
+            name = name[:-4]
+        if name:
+            dirs.add(name)
+    return dirs
+
 
 class StaleCd(BaseModel):
     file: str
@@ -105,18 +141,35 @@ def find_stale_cd_refs(files: list[Path] | None = None) -> list[StaleCd]:
         # carries forward inside the same fence (i.e. consecutive lines).
         prev_line: int | None = None
         cwd = REPO_ROOT
+        clone_dirs: set[str] = set()  # names created by `git clone` in this block
+        phantom = False  # cwd is inside a cloned (not-in-tree) dir → don't validate
         for lineno, segment in _iter_code_segments(text):
             if prev_line is None or lineno != prev_line + 1:
                 # Boundary between two non-adjacent code regions: reset cwd
                 # so a stale ``cd`` doesn't leak across separate blocks.
                 cwd = REPO_ROOT
+                clone_dirs = set()
+                phantom = False
             prev_line = lineno
+
+            clone_dirs |= _clone_dirs(segment)
 
             for m in _CD_RE.finditer(segment):
                 raw = m.group("path")
                 if _is_dynamic(raw):
                     continue
                 resolved = _resolve(cwd, raw)
+                cleaned = _strip_quotes(raw).rstrip("/")
+                # Already inside a freshly-cloned dir: nothing beneath it exists
+                # in-tree, so carry the cwd forward without validating.
+                if phantom:
+                    cwd = resolved
+                    continue
+                # Entering a dir that `git clone` just created in this block.
+                if cleaned in clone_dirs:
+                    cwd = resolved
+                    phantom = True
+                    continue
                 if resolved.is_dir():
                     cwd = resolved
                     continue
