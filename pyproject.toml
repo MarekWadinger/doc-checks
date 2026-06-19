@@ -15,6 +15,8 @@ doc-check-make-refs = "doc_checks.check_make_refs:main"
 doc-check-cd-refs = "doc_checks.check_cd_refs:main"
 doc-check-py-imports = "doc_checks.check_py_imports:main"
 doc-check-trees = "doc_checks.check_trees:main"
+doc-check-env-vars = "doc_checks.check_env_vars:main"
+doc-check-endpoints = "doc_checks.check_endpoints:main"
 doc-check-mermaid = "doc_checks.check_mermaid:main"
 
 [dependency-groups]

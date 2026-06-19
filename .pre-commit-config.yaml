@@ -40,6 +40,20 @@ repos:
         files: '\.(md|markdown)$'
         pass_filenames: true
         stages: [pre-commit]
+      - id: doc-check-env-vars
+        name: doc-check-env-vars (Pydantic Settings vs .env.example)
+        entry: uv run doc-check-env-vars
+        language: system
+        files: '(\.py|\.env\.example|README\.md)$'
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: doc-check-endpoints
+        name: doc-check-endpoints (documented endpoints vs router decorators)
+        entry: uv run doc-check-endpoints
+        language: system
+        files: '\.(py|md|markdown)$'
+        pass_filenames: false
+        stages: [pre-commit]
       - id: doc-check-mermaid
         name: doc-check-mermaid (mermaid syntax via mmdc, skipped if mmdc missing)
         entry: uv run doc-check-mermaid

@@ -8,6 +8,8 @@
 #         - id: doc-check-cd-refs
 #         - id: doc-check-py-imports
 #         - id: doc-check-trees
+#         - id: doc-check-env-vars
+#         - id: doc-check-endpoints
 #         - id: doc-check-mermaid
 #
 # Defaults (scan globs, excludes, ignored targets) can be overridden per repo
@@ -41,6 +43,24 @@
   language: python
   files: '\.(md|markdown)$'
   pass_filenames: true
+  stages: [pre-commit]
+- id: doc-check-env-vars
+  name: doc-check-env-vars (Pydantic Settings vs .env.example)
+  entry: doc-check-env-vars
+  language: python
+  # Whole-repo audit: re-run when settings modules, the example env file, or
+  # the README change. The check ignores passed filenames.
+  files: '(\.py|\.env\.example|README\.md)$'
+  pass_filenames: false
+  stages: [pre-commit]
+- id: doc-check-endpoints
+  name: doc-check-endpoints (documented endpoints vs router decorators)
+  entry: doc-check-endpoints
+  language: python
+  # Whole-repo audit over configured services; passes trivially until services
+  # are configured in .doc-checks.yaml. Ignores passed filenames.
+  files: '\.(py|md|markdown)$'
+  pass_filenames: false
   stages: [pre-commit]
 - id: doc-check-mermaid
   name: doc-check-mermaid (mermaid syntax via mmdc, skipped if mmdc missing)

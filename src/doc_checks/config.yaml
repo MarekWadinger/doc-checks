@@ -107,6 +107,68 @@ trees:
     - ".venv"
     - "__pycache__"
 
+env_vars:
+  # Modules defining Pydantic ``BaseSettings`` classes (globs, repo-relative).
+  # Override per repo to point at your actual settings module(s).
+  config_globs:
+    - "**/config.py"
+    - "**/settings.py"
+    - "**/conf.py"
+  exclude_globs:
+    - ".venv/**"
+    - "node_modules/**"
+    - ".pytest_cache/**"
+    - ".ruff_cache/**"
+  # The example env file fields are compared against.
+  env_example: ".env.example"
+  # README scanned (informationally) for an "Environment Variables" section.
+  readme_file: "README.md"
+  # Class names recognized as Pydantic Settings sources. Subclasses of these
+  # (within the same file) are picked up transitively.
+  settings_base_classes:
+    - BaseSettings
+  # Class attributes that are not real env vars (internal Pydantic config).
+  ignore_fields:
+    - model_config
+  # ``.env.example`` vars that legitimately map to no settings field — e.g.
+  # ones consumed via ``os.getenv`` or by external services / Docker Compose.
+  known_non_config_vars: []
+
+endpoints:
+  # Framework/internal endpoints silently excluded from doc checks.
+  internal:
+    - /status
+    - /health
+    - /docs
+    - /openapi.json
+    - /redoc
+    - /
+  # Decorator receiver names treated as routers: ``@router.get`` / ``@app.post``.
+  router_names:
+    - router
+    - app
+  # HTTP methods recognized on a router decorator.
+  methods:
+    - get
+    - post
+    - put
+    - delete
+    - patch
+    - head
+    - options
+  # Regex prefixes stripped from paths before comparison (versioned API roots).
+  strip_path_prefixes:
+    - '^/api/v\d+'
+  # Service definitions: name → endpoints source dir + readme files (repo-relative).
+  # Empty by default — the check passes trivially until a consumer configures
+  # at least one service. Example:
+  #   services:
+  #     api:
+  #       endpoints_dir: src/api/endpoints
+  #       readme_files:
+  #         - README.md
+  services: {}
+
 runner:
   # Execution order for checks — cheapest/fastest first for effective fail-fast behaviour.
   # Any check_*.py module not listed here is auto-appended in alphabetical order.
@@ -115,6 +177,8 @@ runner:
     - cd_refs
     - py_imports
     - trees
+    - env_vars
+    - endpoints
     - mermaid
   # Human-readable labels for console output
   labels:
@@ -122,4 +186,6 @@ runner:
     cd_refs: CD Ref Audit
     py_imports: Py Import Audit
     trees: Tree Ref Audit
+    env_vars: Env Var Audit
+    endpoints: Endpoint Registry
     mermaid: Mermaid Audit

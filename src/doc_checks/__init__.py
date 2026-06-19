@@ -7,6 +7,9 @@ Available checks:
     - make_refs:  Stale ``make <target>`` references in markdown
     - cd_refs:    Stale ``cd <path>`` references in markdown
     - py_imports: Stale project-local imports in markdown code fences
+    - trees:      Stale paths in ASCII project-trees in markdown
+    - env_vars:   Required Pydantic Settings fields missing from .env.example
+    - endpoints:  Documented endpoints with no matching router decorator in code
     - mermaid:    Mermaid diagram syntax (via ``mmdc``, skipped if missing)
 
 Usage (console scripts installed with the package):
