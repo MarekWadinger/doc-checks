@@ -1,3 +1,9 @@
+## v0.5.1 (2026-06-19)
+
+### Fix
+
+- env-vars skips ClassVar attributes on BaseSettings (#10)
+
 ## v0.5.0 (2026-06-19)
 
 ### Feat
