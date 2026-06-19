@@ -5,6 +5,12 @@ files for ``make <target>`` usages **inside code spans or fenced code blocks onl
 (prose mentions like "make sure to run the tests" are ignored). Each unknown
 target is reported with file:line so it can be fixed or removed.
 
+Makefiles are also discovered recursively: a ``make <target>`` in a doc is
+validated against the configured root Makefile(s) **plus** any Makefile in the
+doc's own directory or sub-directories. This lets a monorepo sub-project
+(``server/README.md`` → ``server/Makefile``) work without per-section config,
+while a target defined only in a sibling sub-project stays flagged.
+
 Usage:
     python -m doc_checks.check_make_refs
 """
@@ -227,12 +233,55 @@ def _iter_markdown_files() -> Iterator[Path]:
             yield path
 
 
+def _discover_makefiles() -> dict[Path, set[str]]:
+    """Map each directory (repo-relative) to the targets of a Makefile it holds.
+
+    Walks the repo for ``Makefile`` / ``makefile`` / ``GNUmakefile`` so that a
+    monorepo sub-project's targets validate against docs living alongside it,
+    without each consumer having to enumerate every Makefile in config.
+    ``EXCLUDE_GLOBS`` is honoured so vendored Makefiles (e.g. under
+    ``site-packages``) don't contribute phantom targets.
+    """
+    out: dict[Path, set[str]] = {}
+    for name in ("Makefile", "makefile", "GNUmakefile"):
+        for mk in REPO_ROOT.glob(f"**/{name}"):
+            if not mk.is_file():
+                continue
+            rel = mk.relative_to(REPO_ROOT)
+            if any(rel.full_match(pat) for pat in EXCLUDE_GLOBS):
+                continue
+            targets = parse_makefile_targets(mk)
+            if targets:
+                out.setdefault(rel.parent, set()).update(targets)
+    return out
+
+
+def _scoped_targets(doc_dir: Path, global_known: set[str], discovered: dict[Path, set[str]]) -> set[str]:
+    """Targets valid for a doc at ``doc_dir``: globals + Makefiles at/below it.
+
+    A ``make <target>`` in ``server/README.md`` is validated against
+    ``server/Makefile`` and any Makefile in its sub-directories, plus the
+    always-available globals (the configured root Makefile + ignore list). A
+    target defined only in a *sibling* sub-project stays flagged.
+    """
+    known = set(global_known)
+    for mk_dir, targets in discovered.items():
+        if mk_dir == doc_dir or doc_dir in mk_dir.parents:
+            known |= targets
+    return known
+
+
 def find_stale_refs(files: list[Path] | None = None) -> tuple[list[StaleRef], set[str]]:
     """Return (stale_refs, known_targets) for the given (or all configured) files."""
-    known: set[str] = set()
+    global_known: set[str] = set()
     for rel in MAKEFILE_PATHS:
-        known |= parse_makefile_targets(REPO_ROOT / rel)
-    known |= IGNORE_TARGETS
+        global_known |= parse_makefile_targets(REPO_ROOT / rel)
+    global_known |= IGNORE_TARGETS
+
+    discovered = _discover_makefiles()
+    all_known = set(global_known)
+    for targets in discovered.values():
+        all_known |= targets
 
     targets_iter = files if files is not None else list(_iter_markdown_files())
     stale: list[StaleRef] = []
@@ -241,6 +290,8 @@ def find_stale_refs(files: list[Path] | None = None) -> tuple[list[StaleRef], se
             text = path.read_text()
         except (OSError, UnicodeDecodeError):
             continue
+        doc_dir = path.parent.relative_to(REPO_ROOT)
+        known = _scoped_targets(doc_dir, global_known, discovered)
         for lineno, segment in _iter_code_segments(text):
             for target in _iter_make_targets_in_segment(segment):
                 if target in known:
@@ -254,7 +305,7 @@ def find_stale_refs(files: list[Path] | None = None) -> tuple[list[StaleRef], se
                         suggestion=_suggest(target, known),
                     )
                 )
-    return stale, known
+    return stale, all_known
 
 
 def _resolve_hook_files(arg_files: list[str]) -> list[Path] | None:
