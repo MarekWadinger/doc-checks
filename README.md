@@ -54,8 +54,12 @@ SKIP=doc-check-mermaid git commit -m "..."
 #### `doc-check-make-refs`
 
 Fails when markdown mentions `make <target>` and the target is not defined in
-any configured Makefile. Config keys (`make_refs:`): `makefiles`,
-`ignore_targets`, `scan_globs`, `exclude_globs`.
+any configured Makefile. Makefiles are discovered recursively: a reference is
+validated against the configured root Makefile(s) **plus** any Makefile in the
+doc's own directory or sub-directories, so a monorepo sub-project
+(`server/README.md` → `server/Makefile`) works without per-section config. A
+target defined only in a *sibling* sub-project stays flagged. Config keys
+(`make_refs:`): `makefiles`, `ignore_targets`, `scan_globs`, `exclude_globs`.
 
 #### `doc-check-cd-refs`
 
@@ -80,7 +84,10 @@ basename no longer exists anywhere in the repo. Detects box-drawing trees
 Only branch lines are validated, and matching is by basename — a renamed
 parent directory won't trip the check, a deleted leaf will. Placeholders
 (`...`, `etc.`), wildcards (`*.py`), and `..` parents are skipped, as are
-`ls -F` / `tree -F` type indicators. Config keys (`trees:`): `ignore_names`,
+`ls -F` / `tree -F` type indicators. To opt a conceptual box-drawn diagram
+(decision tree, struct/field listing) out of validation, tag the fence
+info-string (` ```text no-trees `) or precede it with
+`<!-- doc-checks: ignore-trees -->`. Config keys (`trees:`): `ignore_names`,
 `prune_dirs`, `scan_globs`, `exclude_globs`.
 
 #### `doc-check-env-vars`

@@ -61,30 +61,47 @@ def _looks_like_repo(token: str) -> bool:
     return "://" in token or token.startswith("git@") or token.endswith(".git") or (":" in token and "/" in token)
 
 
-def _clone_dirs(segment: str) -> set[str]:
-    """Directory names created by ``git clone`` commands in one shell segment.
+def _clone_dirs(segment: str) -> tuple[set[str], bool]:
+    """Directories created by ``git clone`` commands in one shell segment.
 
-    Returns the explicit target dir when given (``git clone <url> <dir>``),
-    otherwise the URL basename with any trailing ``.git`` stripped. Flags such
-    as ``--depth 1`` are tolerated by locating the URL token by shape rather
-    than by position.
+    Returns ``(names, unresolved)``:
+        * ``names`` — concrete directory names we could derive: the explicit
+          target (``git clone <url> <dir>``), else the URL basename with any
+          trailing ``.git`` stripped.
+        * ``unresolved`` — True if a clone happened whose target name we
+          *cannot* pin down: a placeholder URL (``git clone <repository-url>``)
+          or a dynamic/placeholder explicit dir (``"$PROJECT"``, ``<name>``).
+          The following ``cd`` is then the phantom clone-entry regardless of
+          its literal name (issue #7).
+
+    Flags such as ``--depth 1`` are tolerated by locating the URL token by
+    shape rather than by position.
     """
     dirs: set[str] = set()
+    unresolved = False
     for m in _GIT_CLONE_RE.finditer(segment):
         tokens = m.group("args").split()
         url_idx = next((i for i, t in enumerate(tokens) if _looks_like_repo(t)), None)
         if url_idx is None:
+            # No URL-shaped token ⇒ placeholder URL (``<repository-url>``, ``$REPO``).
+            unresolved = True
             continue
         explicit = next((t for t in tokens[url_idx + 1 :] if not t.startswith("-")), None)
         if explicit is not None:
-            dirs.add(explicit.rstrip("/"))
+            cleaned = _strip_quotes(explicit).rstrip("/")
+            if _is_dynamic(cleaned) or "<" in cleaned:
+                unresolved = True
+            else:
+                dirs.add(cleaned)
             continue
-        name = tokens[url_idx].rstrip("/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+        name = _strip_quotes(tokens[url_idx]).rstrip("/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
         if name.endswith(".git"):
             name = name[:-4]
-        if name:
+        if not name or "<" in name or "$" in name:
+            unresolved = True
+        elif name:
             dirs.add(name)
-    return dirs
+    return dirs, unresolved
 
 
 class StaleCd(BaseModel):
@@ -143,6 +160,7 @@ def find_stale_cd_refs(files: list[Path] | None = None) -> list[StaleCd]:
         cwd = REPO_ROOT
         clone_dirs: set[str] = set()  # names created by `git clone` in this block
         phantom = False  # cwd is inside a cloned (not-in-tree) dir → don't validate
+        pending_clone = False  # an unresolved clone awaits its phantom cd-entry
         for lineno, segment in _iter_code_segments(text):
             if prev_line is None or lineno != prev_line + 1:
                 # Boundary between two non-adjacent code regions: reset cwd
@@ -150,25 +168,31 @@ def find_stale_cd_refs(files: list[Path] | None = None) -> list[StaleCd]:
                 cwd = REPO_ROOT
                 clone_dirs = set()
                 phantom = False
+                pending_clone = False
             prev_line = lineno
 
-            clone_dirs |= _clone_dirs(segment)
+            new_dirs, unresolved = _clone_dirs(segment)
+            clone_dirs |= new_dirs
+            pending_clone = pending_clone or unresolved
 
             for m in _CD_RE.finditer(segment):
                 raw = m.group("path")
-                if _is_dynamic(raw):
+                cleaned = _strip_quotes(raw).rstrip("/")
+                if _is_dynamic(cleaned):
                     continue
                 resolved = _resolve(cwd, raw)
-                cleaned = _strip_quotes(raw).rstrip("/")
                 # Already inside a freshly-cloned dir: nothing beneath it exists
                 # in-tree, so carry the cwd forward without validating.
                 if phantom:
                     cwd = resolved
                     continue
-                # Entering a dir that `git clone` just created in this block.
-                if cleaned in clone_dirs:
+                # Entering a dir that `git clone` just created in this block,
+                # either by matching name or as the phantom entry following a
+                # clone whose target name we couldn't resolve (issue #7).
+                if cleaned in clone_dirs or pending_clone:
                     cwd = resolved
                     phantom = True
+                    pending_clone = False
                     continue
                 if resolved.is_dir():
                     cwd = resolved

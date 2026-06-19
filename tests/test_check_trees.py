@@ -150,6 +150,54 @@ def test_reports_correct_line_numbers() -> None:
     assert entries == [(5, "first.py"), (6, "second.py")]
 
 
+def test_info_string_opt_out() -> None:  # issue #9
+    # A ``no-trees`` info-string tag skips the block entirely.
+    md = textwrap.dedent(
+        """\
+        ```text no-trees
+        Do you have a database?
+        ├─ NO  → migrate
+        └─ YES → current
+        ```
+        """
+    )
+    assert ct.extract_tree_entries(md) == []
+
+
+def test_comment_opt_out() -> None:  # issue #9
+    md = textwrap.dedent(
+        """\
+        <!-- doc-checks: ignore-trees -->
+        ```text
+        RunFingerprint
+        ├── comparability_key   SHA-256 of inputs
+        └── prompt_content_hash SHA-256 of prompt
+        ```
+        """
+    )
+    assert ct.extract_tree_entries(md) == []
+
+
+def test_comment_opt_out_only_applies_to_next_fence() -> None:  # issue #9
+    # The comment is consumed by the first following fence; an unrelated real
+    # tree afterwards is still validated.
+    md = textwrap.dedent(
+        """\
+        <!-- doc-checks: ignore-trees -->
+        ```text
+        ├─ NO  → x
+        ```
+
+        ```
+        proj/
+        └── real.py
+        ```
+        """
+    )
+    names = [name for _, name in ct.extract_tree_entries(md)]
+    assert names == ["real.py"]
+
+
 def test_root_line_not_treated_as_entry() -> None:
     # The unindented root (``proj/``) has no branch connector, so it is not
     # validated — only the branch lines are.

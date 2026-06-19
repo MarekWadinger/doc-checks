@@ -41,7 +41,7 @@ SCAN_GLOBS: list[str] = _cfg.get("scan_globs", ["**/*.md"])
 EXCLUDE_GLOBS: list[str] = _cfg.get("exclude_globs", [])
 IGNORE_NAMES: set[str] = set(_cfg.get("ignore_names", ["...", "…", "etc", "etc."]))
 # Directories never walked when collecting the set of existing basenames.
-PRUNE_DIRS: set[str] = set(_cfg.get("prune_dirs", [".git", "node_modules", ".venv", "__pycache__"]))
+PRUNE_DIRS: set[str] = set(_cfg.get("prune_dirs", [".git", "node_modules", ".venv", "site-packages", "__pycache__"]))
 
 # A fenced code block is treated as a tree if any line carries one of these
 # connectors. Box-drawing (``├ └ │ ─``) and the common ASCII renderings.
@@ -57,6 +57,12 @@ BRANCH = re.compile(
     r"[─-]{1,2}\s+"  # one/two dashes then whitespace
     r"(?P<name>[^\s#]+)"  # the entry name (stops at whitespace or a comment)
 )
+
+# Per-block opt-out for conceptual box-drawn diagrams that aren't project
+# trees (decision trees, struct/field listings). Either tag the fence info
+# string (```` ```text no-trees ````) or precede the fence with the comment
+# ``<!-- doc-checks: ignore-trees -->``. See issue #9.
+_IGNORE_TREES_RE = re.compile(r"<!--\s*doc-checks:\s*ignore-trees\s*-->")
 
 # Trailing characters that ``ls -F`` / ``tree -F`` append to indicate file type.
 _FTYPE_INDICATORS = "*/@=|>"
@@ -102,6 +108,8 @@ def _iter_tree_fences(text: str) -> Iterator[tuple[int, str]]:
     fence_marker: str | None = None
     buffer: list[tuple[int, str]] = []
     fence_has_tree = False
+    skip_fence = False  # this fence opted out (info-string or preceding comment)
+    pending_ignore = False  # an ignore-trees comment applies to the next fence
 
     for lineno, line in enumerate(text.splitlines(), start=1):
         stripped = line.lstrip()
@@ -111,15 +119,22 @@ def _iter_tree_fences(text: str) -> Iterator[tuple[int, str]]:
                 fence_marker = stripped[:3]
                 fence_has_tree = False
                 buffer = []
+                skip_fence = pending_ignore or "no-trees" in stripped[3:]
+                pending_ignore = False
+            elif _IGNORE_TREES_RE.search(line):
+                pending_ignore = True
+            elif stripped:
+                pending_ignore = False  # any other content cancels a pending opt-out
             continue
 
         # Inside a fence: a line starting with the same marker closes it.
         if fence_marker is not None and stripped.startswith(fence_marker):
-            if fence_has_tree:
+            if fence_has_tree and not skip_fence:
                 yield from buffer
             in_fence = False
             fence_marker = None
             fence_has_tree = False
+            skip_fence = False
             buffer = []
             continue
 
@@ -128,7 +143,7 @@ def _iter_tree_fences(text: str) -> Iterator[tuple[int, str]]:
         buffer.append((lineno, line))
 
     # Unterminated fence at EOF: still report what we gathered if it's a tree.
-    if in_fence and fence_has_tree:
+    if in_fence and fence_has_tree and not skip_fence:
         yield from buffer
 
 
