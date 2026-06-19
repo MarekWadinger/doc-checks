@@ -13,6 +13,8 @@ hooks. They fail the commit when markdown docs drift from reality:
 | `doc-check-cd-refs` | `cd <path>` references pointing at directories that no longer exist |
 | `doc-check-py-imports` | Project-local imports in markdown code fences that no longer resolve |
 | `doc-check-trees` | ASCII project-tree entries in markdown pointing at files that no longer exist |
+| `doc-check-env-vars` | Required Pydantic `BaseSettings` fields missing from `.env.example` |
+| `doc-check-endpoints` | Endpoints documented in a README that no longer exist as router decorators in code |
 | `doc-check-mermaid` | Broken Mermaid diagram syntax (via `mmdc`, skipped if not installed) |
 
 ## Use in your project
@@ -30,11 +32,16 @@ repos:
       - id: doc-check-cd-refs
       - id: doc-check-py-imports
       - id: doc-check-trees
+      - id: doc-check-env-vars     # for Pydantic-Settings projects
+      - id: doc-check-endpoints    # needs services configured (see below)
       - id: doc-check-mermaid
 ```
 
 Pick only the hooks that fit: `doc-check-make-refs` fails when it finds no
 Makefile targets to validate against, so skip it in repos without a Makefile.
+`doc-check-env-vars` and `doc-check-endpoints` pass trivially until they find
+something to validate (a Pydantic `BaseSettings` class / a configured service),
+so they're safe to leave enabled even where they don't yet apply.
 
 To bypass a hook for one commit (e.g. a false positive you'll fix separately):
 
@@ -75,6 +82,41 @@ parent directory won't trip the check, a deleted leaf will. Placeholders
 (`...`, `etc.`), wildcards (`*.py`), and `..` parents are skipped, as are
 `ls -F` / `tree -F` type indicators. Config keys (`trees:`): `ignore_names`,
 `prune_dirs`, `scan_globs`, `exclude_globs`.
+
+#### `doc-check-env-vars`
+
+Fails when a *required* Pydantic Settings field (one without a default) is
+missing from `.env.example`. AST-parses every module matched by `config_globs`
+(default: `**/config.py`, `**/settings.py`, `**/conf.py`), finds classes
+inheriting from a name in `settings_base_classes` (default: `BaseSettings`),
+applies each class's `env_prefix`, and uppercases the field name to get the
+expected env var. Fields *with* a default, stale `.env.example` entries, and
+README coverage are reported informationally — only missing required fields
+fail. Passes trivially when no settings classes are found. Config keys
+(`env_vars:`): `config_globs`, `exclude_globs`, `env_example`, `readme_file`,
+`settings_base_classes`, `ignore_fields`, `known_non_config_vars`.
+
+#### `doc-check-endpoints`
+
+Fails when a README documents an endpoint that no longer exists in code
+(*code is the source of truth*; undocumented routes are only informational).
+AST-parses router decorators (`@router.get("/x")`, `@app.post(...)`) in each
+configured service's `endpoints_dir` and compares normalized paths against the
+endpoints referenced in its `readme_files`. Internal routes (`/health`,
+`/docs`, …) are skipped, and `strip_path_prefixes` (default: `^/api/v\d+`)
+removes versioned roots before matching. Empty `services` by default, so the
+check passes until you configure at least one. Config keys (`endpoints:`):
+`services`, `internal`, `router_names`, `methods`, `strip_path_prefixes`.
+
+```yaml
+# .doc-checks.yaml — configure a service for doc-check-endpoints
+endpoints:
+  services:
+    api:
+      endpoints_dir: src/api/endpoints   # dir of *.py with router decorators
+      readme_files:
+        - README.md
+```
 
 #### `doc-check-mermaid`
 

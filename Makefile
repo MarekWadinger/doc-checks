@@ -1,4 +1,4 @@
-.PHONY: install test doc-check doc-check-make-refs doc-check-cd-refs doc-check-py-imports doc-check-trees doc-check-mermaid pre-commit build
+.PHONY: install test doc-check doc-check-make-refs doc-check-cd-refs doc-check-py-imports doc-check-trees doc-check-env-vars doc-check-endpoints doc-check-mermaid pre-commit build
 
 install:
 	uv sync --all-groups
@@ -18,6 +18,12 @@ doc-check-py-imports:
 
 doc-check-trees:
 	uv run doc-check-trees
+
+doc-check-env-vars:
+	uv run doc-check-env-vars
+
+doc-check-endpoints:
+	uv run doc-check-endpoints
 
 doc-check-mermaid:
 	uv run doc-check-mermaid
