@@ -13,7 +13,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from doc_checks import CheckResult, get_config, repo_root
+from doc_checks import CheckResult, get_config
 
 _cfg = get_config()["runner"]
 LABELS: dict[str, str] = _cfg["labels"]
