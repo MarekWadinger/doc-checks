@@ -1,3 +1,15 @@
+## v0.5.0 (2026-06-19)
+
+### Feat
+
+- recursive Makefile discovery with per-directory scoping
+
+### Fix
+
+- per-block opt-out for conceptual trees in doc-check-trees (#9)
+- recursive default excludes for nested venvs (#8)
+- cd-refs skips quoted vars and placeholder-URL clones (#5, #7)
+
 ## v0.4.0 (2026-06-19)
 
 ### Feat
