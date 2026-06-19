@@ -1,3 +1,9 @@
+## v0.4.0 (2026-06-19)
+
+### Feat
+
+- add env-vars and endpoints doc checks (#6)
+
 ## v0.3.0 (2026-06-18)
 
 ### Feat
