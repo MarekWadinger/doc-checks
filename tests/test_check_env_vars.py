@@ -89,6 +89,27 @@ def test_extract_skips_ignored_fields_and_non_settings(tmp_path) -> None:
     assert [f.name for f in classes["Settings"]] == ["TOKEN"]
 
 
+def test_extract_skips_classvars(tmp_path) -> None:  # issue #10
+    cfg = tmp_path / "config.py"
+    cfg.write_text(
+        textwrap.dedent(
+            """\
+            from typing import ClassVar
+            import typing
+
+            class Settings(BaseSettings):
+                SERVICE_NAME: ClassVar[str] = "svc"
+                ENDPOINT: typing.ClassVar[str] = "/x/{id}"
+                BARE: ClassVar = 1
+                DATABASE_URL: str
+            """
+        ),
+        encoding="utf-8",
+    )
+    classes = ev.extract_settings_fields(cfg)
+    assert [f.name for f in classes["Settings"]] == ["DATABASE_URL"]
+
+
 def test_extract_follows_transitive_settings_base(tmp_path) -> None:
     cfg = tmp_path / "config.py"
     cfg.write_text(
