@@ -96,6 +96,22 @@ def _field_has_default(node: ast.AnnAssign) -> bool:
     return True
 
 
+def _is_classvar(node: ast.AnnAssign) -> bool:
+    """True if the annotation is ``ClassVar`` / ``ClassVar[...]`` (or ``typing.ClassVar``).
+
+    Pydantic treats these as class variables, not model fields, so they are not
+    env vars and must be skipped (issue #10).
+    """
+    ann = node.annotation
+    if isinstance(ann, ast.Subscript):  # ClassVar[str]
+        ann = ann.value
+    if isinstance(ann, ast.Name):
+        return ann.id == "ClassVar"
+    if isinstance(ann, ast.Attribute):  # typing.ClassVar
+        return ann.attr == "ClassVar"
+    return False
+
+
 def _extract_env_prefix(class_node: ast.ClassDef) -> str:
     """Return ``env_prefix`` from ``model_config = SettingsConfigDict(...)`` if set."""
     for item in class_node.body:
@@ -153,7 +169,7 @@ def extract_settings_fields(config_path: Path) -> dict[str, list[FieldInfo]]:
         for item in node.body:
             if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
                 field_name = item.target.id
-                if field_name not in IGNORE_FIELDS:
+                if field_name not in IGNORE_FIELDS and not _is_classvar(item):
                     fields.append(
                         FieldInfo(
                             name=f"{prefix}{field_name}".upper(),
