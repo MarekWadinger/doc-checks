@@ -69,6 +69,12 @@ _SHELL_FENCE_TAGS: frozenset[str] = frozenset(
 # false negatives are cheaper than false positives on a lint hook.
 _INLINE_CODE_RE = re.compile(r"`([^`\n]+)`")
 
+# Make flags that consume the following word, so that word is not a target
+# (``make -C server serve`` → the target is ``serve``, not ``server``).
+# Attached forms (``-Cserver``, ``--directory=server``) already fall out of
+# the flag/assignment skips below.
+_FLAGS_WITH_ARG: frozenset[str] = frozenset({"-C", "--directory", "-f", "--file", "--makefile", "-I", "--include-dir"})
+
 # Shell terminators that end a single command; everything after belongs to a
 # new command (``;``, ``&&``, ``||``, ``|``, ``&``, redirection) or is a shell
 # comment (`` # ``). Everything after such a token is not part of the current
@@ -162,8 +168,13 @@ def _iter_make_targets_in_segment(segment: str) -> Iterator[str]:
         rest = segment[m.end() :]
         term = _CMD_TERMINATOR_RE.search(rest)
         chunk = rest[: term.start()] if term else rest
+        skip_next = False
         for raw_token in chunk.split():
+            if skip_next:
+                skip_next = False
+                continue  # argument of ``-C`` / ``-f`` etc., not a target
             if raw_token.startswith("-"):
+                skip_next = raw_token in _FLAGS_WITH_ARG
                 continue  # flag, not a target
             if raw_token.startswith("$"):
                 continue  # ``$(MAKE)``, ``$FOO`` — not a literal target

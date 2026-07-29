@@ -64,6 +64,15 @@ def test_root_doc_sees_subproject_targets(repo: Path) -> None:
     assert stale == []
 
 
+def test_dash_c_directory_arg_not_a_target(repo: Path) -> None:  # fix
+    _mk(repo, "Makefile", "install")
+    _mk(repo, "server/Makefile", "serve")
+    doc = repo / "README.md"
+    doc.write_text("```bash\nmake -C server serve\n```\n")
+    stale, _ = mr.find_stale_refs([doc])
+    assert stale == []
+
+
 def test_root_target_available_in_subproject(repo: Path) -> None:
     _mk(repo, "Makefile", "install")
     _mk(repo, "server/Makefile", "serve")
