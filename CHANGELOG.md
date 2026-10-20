@@ -1,3 +1,9 @@
+## v0.5.2 (2026-10-20)
+
+### Fix
+
+- resolve src-layout packages in doc-check-py-imports (#13)
+
 ## v0.5.1 (2026-06-19)
 
 ### Fix
