@@ -38,19 +38,39 @@ from doc_checks import CheckResult, get_config, repo_root
 
 REPO_ROOT = repo_root()
 
-# ``find_spec`` resolves against sys.path. Installed as a pre-commit hook this
-# package runs from pre-commit's isolated venv, so the consumer repo's own
-# packages aren't importable unless its root is added explicitly (this mirrors
-# the implicit cwd-on-sys.path behavior of the old ``python -m`` invocation).
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 _cfg = get_config().get("py_imports", {})
 SCAN_GLOBS: list[str] = _cfg.get("scan_globs", ["**/*.md"])
 EXCLUDE_GLOBS: list[str] = _cfg.get("exclude_globs", [])
+# Directories (relative to the repo root) that hold importable top-level packages.
+SOURCE_ROOTS: list[str] = _cfg.get("source_roots", [".", "src"])
+
+
+def _source_paths(root: Path, source_roots: list[str]) -> list[Path]:
+    """Existing source roots under ``root``, in configured order."""
+    return [p for p in ((root / r).resolve() for r in source_roots) if p.is_dir()]
+
+
+def _detect_src_packages(root: Path) -> set[str]:
+    """Top-level regular packages of a src layout (``src/<pkg>/__init__.py``)."""
+    src = root / "src"
+    return {p.parent.name for p in src.glob("*/__init__.py")} if src.is_dir() else set()
+
+
+# ``find_spec`` resolves against sys.path. Installed as a pre-commit hook this
+# package runs from pre-commit's isolated venv, so the consumer repo's own
+# packages aren't importable unless its source roots are added explicitly: the
+# repo root (mirrors the implicit cwd-on-sys.path of ``python -m``) and ``src/``
+# for src-layout projects, where docs import ``pkg.x``, never ``src.pkg.x``.
+for _path in reversed(_source_paths(REPO_ROOT, SOURCE_ROOTS)):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
+
 # Top-level packages considered "project-local" and therefore worth validating.
 # Anything else (third-party, stdlib) is left to the regular dependency tooling.
-PROJECT_PACKAGES: set[str] = set(_cfg.get("project_packages", ["src", "lib", "scripts"]))
+# src-layout packages are always included, so they're validated without config.
+PROJECT_PACKAGES: set[str] = set(_cfg.get("project_packages", ["src", "lib", "scripts"])) | _detect_src_packages(
+    REPO_ROOT
+)
 
 
 class StaleImport(BaseModel):

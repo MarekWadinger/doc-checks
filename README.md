@@ -73,8 +73,11 @@ skipped as machine-specific. Config keys (`cd_refs:`): `ignore_prefixes`,
 Fails when a Python code fence in markdown imports a project-local module
 that no longer resolves. Only top-level packages listed in `project_packages`
 (default: `src`, `lib`, `scripts`) are validated — third-party and stdlib
-imports are ignored. Config keys (`py_imports:`): `project_packages`,
-`scan_globs`, `exclude_globs`.
+imports are ignored. Src-layout projects work without config: every package
+under `src/<pkg>/__init__.py` is validated, and `source_roots` (default: `.`,
+`src`) are put on `sys.path` so `from pkg.x import y` resolves. Config keys
+(`py_imports:`): `project_packages`, `source_roots`, `scan_globs`,
+`exclude_globs`.
 
 #### `doc-check-trees`
 

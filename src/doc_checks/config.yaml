@@ -64,10 +64,16 @@ py_imports:
   # Top-level packages whose imports we statically validate. Anything outside
   # these (third-party, stdlib) is left to ``pyproject.toml`` / dependency
   # tooling. Override per repo via `.doc-checks.yaml` with your package names.
+  # Packages found under ``src/<pkg>/__init__.py`` are always added.
   project_packages:
     - src
     - lib
     - scripts
+  # Directories put on sys.path so project packages resolve (repo root, plus
+  # ``src/`` for src-layout projects). Missing directories are skipped.
+  source_roots:
+    - "."
+    - src
 
 make_refs:
   # Makefiles that define legitimate targets (relative to repo root)
