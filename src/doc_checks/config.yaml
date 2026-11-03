@@ -200,6 +200,41 @@ endpoints:
   #         - README.md
   services: {}
 
+links:
+  # Markdown files whose file references are linked and whose links are checked.
+  # The hook scans all of them on every run: deleting a code file must fail the
+  # docs that point at it, and those docs are usually not part of the change.
+  scan_globs:
+    - "**/*.md"
+    - "**/*.markdown"
+  exclude_globs:
+    - "**/.venv/**"
+    - "**/site-packages/**"
+    - "**/node_modules/**"
+    - "**/.pytest_cache/**"
+    - "**/.ruff_cache/**"
+    # CHANGELOG entries are historical: they may name files that have since moved.
+    - "CHANGELOG.md"
+    - "**/CHANGELOG.md"
+  # A code span counts as a file reference when it ends in "/" or has one of
+  # these extensions (or is one of ``names``); bare prose paths need a "/" too.
+  extensions: [md, markdown, rst, txt, py, pyi, ipynb, r, jl, m, c, h, cpp, hpp, rs, go, java, js, jsx, ts, tsx,
+               css, scss, html, sh, bash, zsh, ps1, sql, json, jsonl, yaml, yml, toml, ini, cfg, conf, env, lock,
+               csv, tsv, parquet, feather, xlsx, tex, bib, bst, cls, sty, pdf, png, jpg, jpeg, gif, svg, webp]
+  names: [Makefile, Dockerfile, Justfile, LICENSE, Procfile]
+  # Extra directories (repo-relative) to resolve short references against,
+  # after the document's own directory and the repo root.
+  search_dirs: []
+  # Globs for references that are deliberately not files in the repo (build
+  # outputs, data downloads, paths on other machines). Matched against the
+  # written reference and the resolved path.
+  ignore_refs: []
+  # Rewrite resolvable references into links and re-point moved files.
+  autofix: true
+  # Check #L42 line anchors and #heading anchors of markdown targets.
+  check_anchors: true
+  prune_dirs: [".git", "node_modules", ".venv", "site-packages", "__pycache__"]
+
 runner:
   # Execution order for checks — cheapest/fastest first for effective fail-fast behaviour.
   # Any check_*.py module not listed here is auto-appended in alphabetical order.
@@ -211,6 +246,7 @@ runner:
     - env_vars
     - endpoints
     - mermaid
+    - links
   # Human-readable labels for console output
   labels:
     make_refs: Make Ref Audit
@@ -220,3 +256,4 @@ runner:
     env_vars: Env Var Audit
     endpoints: Endpoint Registry
     mermaid: Mermaid Audit
+    links: Link Audit

@@ -18,6 +18,7 @@ doc-check-trees = "doc_checks.check_trees:main"
 doc-check-env-vars = "doc_checks.check_env_vars:main"
 doc-check-endpoints = "doc_checks.check_endpoints:main"
 doc-check-mermaid = "doc_checks.check_mermaid:main"
+doc-check-links = "doc_checks.check_links:main"
 
 [dependency-groups]
 dev = [

@@ -11,6 +11,7 @@
 #         - id: doc-check-env-vars
 #         - id: doc-check-endpoints
 #         - id: doc-check-mermaid
+#         - id: doc-check-links
 #
 # Defaults (scan globs, excludes, ignored targets) can be overridden per repo
 # in a `.doc-checks.yaml` at the consumer repo root — see README.
@@ -68,4 +69,13 @@
   language: python
   files: '\.(md|markdown)$'
   pass_filenames: true
+  stages: [pre-commit]
+- id: doc-check-links
+  name: doc-check-links (file references in markdown are links that resolve)
+  entry: doc-check-links
+  language: python
+  # Every run scans all configured markdown files: a deleted or moved code
+  # file must fail the docs that mention it, which are rarely in the change.
+  pass_filenames: false
+  always_run: true
   stages: [pre-commit]

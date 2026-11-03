@@ -16,10 +16,11 @@ hooks. They fail the commit when markdown docs drift from reality:
 | `doc-check-env-vars` | Required Pydantic `BaseSettings` fields missing from `.env.example` |
 | `doc-check-endpoints` | Endpoints documented in a README that no longer exist as router decorators in code |
 | `doc-check-mermaid` | Broken Mermaid diagram syntax (via `mmdc`, skipped if not installed) |
+| `doc-check-links` | File references in markdown that are not links, and links (or anchors) that no longer resolve |
 
 ## Use in your project
 
-Add the hooks to your repo's `.pre-commit-config.yaml` — pre-commit installs
+Add the hooks to your repo's [`.pre-commit-config.yaml`](.pre-commit-config.yaml) — pre-commit installs
 this package into an isolated environment, no manual setup needed
 (hook definitions: [`.pre-commit-hooks.yaml`](.pre-commit-hooks.yaml)):
 
@@ -35,6 +36,7 @@ repos:
       - id: doc-check-env-vars     # for Pydantic-Settings projects
       - id: doc-check-endpoints    # needs services configured (see below)
       - id: doc-check-mermaid
+      - id: doc-check-links
 ```
 
 Pick only the hooks that fit: `doc-check-make-refs` fails when it finds no
@@ -57,7 +59,7 @@ Fails when markdown mentions `make <target>` and the target is not defined in
 any configured Makefile. Makefiles are discovered recursively: a reference is
 validated against the configured root Makefile(s) **plus** any Makefile in the
 doc's own directory or sub-directories, so a monorepo sub-project
-(`server/README.md` → `server/Makefile`) works without per-section config. A
+(`server/README.md` → `server/Makefile`) works without per-section config. <!-- doc-checks: ignore-links --> A
 target defined only in a *sibling* sub-project stays flagged. Config keys
 (`make_refs:`): `makefiles`, `ignore_targets`, `scan_globs`, `exclude_globs`.
 
@@ -137,14 +139,47 @@ not installed, so contributors without a Node toolchain aren't blocked; set
 instead. Config keys (`mermaid:`): `require_mmdc`, `scan_globs`,
 `exclude_globs`.
 
-All hooks share `scan_globs` / `exclude_globs`; `CHANGELOG.md` is excluded by
+#### `doc-check-links`
+
+Every file reference in markdown is a link, and every link resolves. Checked
+outside code fences and HTML comments:
+
+- relative links `[text](path#anchor)` and reference definitions `[id]: path`:
+  the target must exist; `#L42` / `#L42-L50` must lie within the file and
+  `#some-heading` must match a heading of a markdown target (GitHub slugs);
+- code spans naming a file or folder (`` `src/app.py` ``, `` `config.yaml` ``,
+  `` `docs/` ``, `` `app.py:42` ``): a span counts when it has no spaces or
+  placeholders (`<run>`, `*`, `...`) and ends in `/` or has a known extension;
+- bare prose paths such as `<dir>/<file>.md` written without backticks (a `/` and a known extension).
+
+A reference resolves against the document's folder, the repo root,
+`search_dirs`, then by unique file name or unique path suffix. Existence is
+judged against the files git knows, so a reference to a gitignored output fails
+on every machine alike; list deliberate non-files in `ignore_refs`.
+
+Like a formatter, it rewrites a reference that resolves to exactly one file
+into a link, and re-points a broken link whose file name now exists exactly
+once elsewhere (a moved file); the commit then fails so you can review and
+stage. Missing and ambiguous references fail with a list.
+
+It scans **all** configured markdown files on every run (`always_run`,
+no file arguments): deleting or moving a code file must fail the docs that
+mention it, and those docs are rarely part of the change. Skip a line with
+`<!-- doc-checks: ignore-links -->`; skip records that must keep historical
+paths (changelogs, logs) with `exclude_globs`. Config keys (`links:`):
+`scan_globs`, `exclude_globs`, `extensions`, `names`, `search_dirs`,
+`ignore_refs`, `autofix`, `check_anchors`. `--check` reports without
+rewriting.
+
+All hooks share `scan_globs` / `exclude_globs`; [`CHANGELOG.md`](CHANGELOG.md) is excluded by
 default because its entries are historical and may legitimately reference
 things that no longer exist.
 
-#### Pair with: `lychee` (broken links)
+#### Pair with: `lychee` (external links)
 
-Link checking is out of scope here — pair the hooks above with the official
-[lychee](https://lychee.cli.rs) hook or a local one. See this repo's
+`doc-check-links` covers links and file references inside the repo; for
+external URLs pair it with the official [lychee](https://lychee.cli.rs) hook
+or a local one. See this repo's
 [`.pre-commit-config.yaml`](.pre-commit-config.yaml) and
 [`.lychee.toml`](.lychee.toml) for a working offline-mode setup (external
 URLs skipped locally, validated in CI).
@@ -154,7 +189,7 @@ URLs skipped locally, validated in CI).
 There is deliberately no `doc-check-changelog` hook. Enforce
 [conventional commits](https://www.conventionalcommits.org) with
 [commitizen](https://commitizen-tools.github.io/commitizen/), then *generate*
-`CHANGELOG.md` from the commit history — nobody hand-edits it, so there is
+[`CHANGELOG.md`](CHANGELOG.md) from the commit history — nobody hand-edits it, so there is
 nothing to drift:
 
 ```yaml
@@ -172,15 +207,15 @@ version_provider = "pep621"   # read/bump version from [project].version
 update_changelog_on_bump = true
 ```
 
-`cz bump --changelog` then bumps the version, rewrites `CHANGELOG.md`, and
+`cz bump --changelog` then bumps the version, rewrites [`CHANGELOG.md`](CHANGELOG.md), and
 tags in one step — this repo automates exactly that on push to main (see
 [`.github/workflows/bump.yml`](.github/workflows/bump.yml)).
 
 ### Per-repo configuration
 
 Defaults live in the packaged [`src/doc_checks/config.yaml`](src/doc_checks/config.yaml).
-To override, either drop a `.doc-checks.yaml` at your repo root or add a
-`[tool.doc-checks]` table to `pyproject.toml` — sections are merged key-by-key
+To override, either drop a [`.doc-checks.yaml`](.doc-checks.yaml) at your repo root or add a
+`[tool.doc-checks]` table to [`pyproject.toml`](pyproject.toml) — sections are merged key-by-key
 over the defaults, so you only state what differs:
 
 ```yaml
@@ -202,7 +237,7 @@ ignore_targets = ["deploy"]
 project_packages = ["myapp"]
 ```
 
-If both are present, `.doc-checks.yaml` wins on conflicting keys. This repo's
+If both are present, [`.doc-checks.yaml`](.doc-checks.yaml) wins on conflicting keys. This repo's
 own [`.doc-checks.yaml`](.doc-checks.yaml) is a working example.
 
 ### CI
