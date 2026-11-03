@@ -1,3 +1,9 @@
+## v0.6.0 (2026-11-03)
+
+### Feat
+
+- doc-check-links, every file reference in markdown is a link that resolves
+
 ## v0.5.2 (2026-10-20)
 
 ### Fix
