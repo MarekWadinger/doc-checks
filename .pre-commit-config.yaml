@@ -61,6 +61,13 @@ repos:
         files: '\.(md|markdown)$'
         pass_filenames: true
         stages: [pre-commit]
+      - id: doc-check-links
+        name: doc-check-links (file references in markdown are links that resolve)
+        entry: uv run doc-check-links
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
       - id: lychee
         name: lychee (broken internal links in markdown)
         # Local hook calling the lychee binary. ``--offline`` skips external

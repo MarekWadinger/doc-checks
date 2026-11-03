@@ -11,6 +11,7 @@ Available checks:
     - env_vars:   Required Pydantic Settings fields missing from .env.example
     - endpoints:  Documented endpoints with no matching router decorator in code
     - mermaid:    Mermaid diagram syntax (via ``mmdc``, skipped if missing)
+    - links:      File references in markdown are links, and every link resolves
 
 Usage (console scripts installed with the package):
     doc-check                  # Run all checks
