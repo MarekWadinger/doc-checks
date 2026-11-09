@@ -235,6 +235,12 @@ links:
   check_anchors: true
   prune_dirs: [".git", "node_modules", ".venv", "site-packages", "__pycache__"]
 
+code_refs:
+  # Scans the same markdown files as links (links.scan_globs / links.exclude_globs).
+  # Move a symbol link's #L anchor to the symbol's current definition, and link
+  # unlinked `path::symbol` code spans.
+  autofix: true
+
 runner:
   # Execution order for checks — cheapest/fastest first for effective fail-fast behaviour.
   # Any check_*.py module not listed here is auto-appended in alphabetical order.
@@ -247,6 +253,7 @@ runner:
     - endpoints
     - mermaid
     - links
+    - code_refs
   # Human-readable labels for console output
   labels:
     make_refs: Make Ref Audit
@@ -257,3 +264,4 @@ runner:
     endpoints: Endpoint Registry
     mermaid: Mermaid Audit
     links: Link Audit
+    code_refs: Code Ref Audit

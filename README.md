@@ -37,6 +37,7 @@ repos:
       - id: doc-check-endpoints    # needs services configured (see below)
       - id: doc-check-mermaid
       - id: doc-check-links
+      - id: doc-check-code-refs
 ```
 
 Pick only the hooks that fit: `doc-check-make-refs` fails when it finds no
@@ -174,6 +175,34 @@ rewriting.
 All hooks share `scan_globs` / `exclude_globs`; [`CHANGELOG.md`](CHANGELOG.md) is excluded by
 default because its entries are historical and may legitimately reference
 things that no longer exist.
+
+#### `doc-check-code-refs`
+
+Keeps links to code pointing at the code after it moves. A link whose label
+names a symbol after `::` carries a line anchor that the check keeps on the
+symbol's definition:
+
+```markdown
+[validate.py::process_validation](src/validator/validate.py#L33)
+[`client.py::Validator.run`](src/client.py#L120-L140)
+```
+
+- Python files are parsed, so `Class.method` and module or class constants
+  resolve exactly. Other files are searched for a `def`/`class`/`func`/
+  `function`/`fn`/`type`/`struct`/`interface`/`const`/`let`/`var` line naming
+  the symbol (`Type.Method` also matches a Go method on `Type`).
+- A stale `#L` anchor is moved to the definition (a range keeps its length),
+  a missing one is added, and an unlinked `` `path/to/file.py::symbol` `` code
+  span becomes such a link.
+- A symbol that is gone, or defined more than once, fails with a list.
+
+Line-only references (`` `file.py:42` ``) cannot heal, since a bare number
+says nothing about what it meant: write `file.py::symbol` wherever a
+reference should survive edits. Missing link targets are reported by
+`doc-check-links`. Like it, this hook rewrites and then fails so you can
+review and stage, and scans every markdown file `doc-check-links` scans.
+Skip a line with `<!-- doc-checks: ignore-code-refs -->`. Config key
+(`code_refs:`): `autofix`. `--check` reports without rewriting.
 
 #### Pair with: `lychee` (external links)
 
