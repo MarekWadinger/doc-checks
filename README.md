@@ -8,7 +8,7 @@ Self-healing documentation checks, distributed as [pre-commit](https://pre-commi
 hooks. They fail the commit when markdown docs drift from reality:
 
 | Hook | What it catches |
-|------|-----------------|
+| --- | --- |
 | `doc-check-make-refs` | `make <target>` references in markdown that no longer exist in the Makefile |
 | `doc-check-cd-refs` | `cd <path>` references pointing at directories that no longer exist |
 | `doc-check-py-imports` | Project-local imports in markdown code fences that no longer resolve |

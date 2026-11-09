@@ -1,0 +1,6 @@
+# markdownlint config, read by the Claude Code plugin's hook and by markdownlint-cli run here.
+MD013: false              # line length: tables and links need long lines
+MD033:
+  allowed_elements: [p, img]  # the centred logo at the top of README.md
+MD024:
+  siblings_only: true      # CHANGELOG.md repeats "### Feat" / "### Fix" under each version (commitizen)
