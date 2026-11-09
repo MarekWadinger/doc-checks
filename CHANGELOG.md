@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.7.1 (2026-11-09)
+
+### Fix
+
+- refresh uv.lock in the release bump commit
+
 ## v0.7.0 (2026-11-09)
 
 ### Feat
