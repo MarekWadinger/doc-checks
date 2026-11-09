@@ -1,6 +1,6 @@
 {
   "name": "doc-checks",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Claude writes docs that stay true: every markdown file it writes is linted, its file references become links that resolve, and symbol links keep pointing at the code.",
   "author": {
     "name": "Marek Wadinger",

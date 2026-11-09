@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.0 (2026-11-09)
+
+### Feat
+
+- Claude Code plugin, checks every markdown file Claude writes
+- doc-check-code-refs, symbol links keep their line anchor on the definition
+
 ## v0.6.0 (2026-11-03)
 
 ### Feat
