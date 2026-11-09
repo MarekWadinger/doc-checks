@@ -12,6 +12,7 @@
 #         - id: doc-check-endpoints
 #         - id: doc-check-mermaid
 #         - id: doc-check-links
+#         - id: doc-check-code-refs
 #
 # Defaults (scan globs, excludes, ignored targets) can be overridden per repo
 # in a `.doc-checks.yaml` at the consumer repo root — see README.
@@ -76,6 +77,15 @@
   language: python
   # Every run scans all configured markdown files: a deleted or moved code
   # file must fail the docs that mention it, which are rarely in the change.
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
+- id: doc-check-code-refs
+  name: doc-check-code-refs (symbol links keep their line anchor on the definition)
+  entry: doc-check-code-refs
+  language: python
+  # Every run scans all configured markdown files: editing code moves the
+  # definitions that docs point at, and those docs are rarely in the change.
   pass_filenames: false
   always_run: true
   stages: [pre-commit]

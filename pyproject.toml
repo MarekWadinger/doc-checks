@@ -19,6 +19,7 @@ doc-check-env-vars = "doc_checks.check_env_vars:main"
 doc-check-endpoints = "doc_checks.check_endpoints:main"
 doc-check-mermaid = "doc_checks.check_mermaid:main"
 doc-check-links = "doc_checks.check_links:main"
+doc-check-code-refs = "doc_checks.check_code_refs:main"
 
 [dependency-groups]
 dev = [
@@ -35,6 +36,8 @@ name = "cz_conventional_commits"
 version_provider = "pep621"      # [project].version is the single source of truth
 tag_format = "v$version"         # matches the `rev: vX.Y.Z` consumers pin
 update_changelog_on_bump = true
+# The Claude Code plugin manifest carries the same version, so installs see each release.
+version_files = [".claude-plugin/plugin.json:\"version\""]
 major_version_zero = true        # 0.x: breaking changes bump minor, not major
 
 [build-system]

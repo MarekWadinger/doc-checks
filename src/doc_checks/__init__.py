@@ -12,6 +12,7 @@ Available checks:
     - endpoints:  Documented endpoints with no matching router decorator in code
     - mermaid:    Mermaid diagram syntax (via ``mmdc``, skipped if missing)
     - links:      File references in markdown are links, and every link resolves
+    - code_refs:  Symbol links (``file.py::func``) keep their line anchor on the definition
 
 Usage (console scripts installed with the package):
     doc-check                  # Run all checks

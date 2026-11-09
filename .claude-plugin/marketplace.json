@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "doc-checks",
+  "description": "Self-healing documentation checks for Claude Code.",
+  "owner": {
+    "name": "Marek Wadinger",
+    "url": "https://github.com/MarekWadinger"
+  },
+  "plugins": [
+    {
+      "name": "doc-checks",
+      "description": "Lint markdown Claude writes, link its file references, keep symbol links on their definitions.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
