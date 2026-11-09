@@ -52,6 +52,27 @@ To bypass a hook for one commit (e.g. a false positive you'll fix separately):
 SKIP=doc-check-mermaid git commit -m "..."
 ```
 
+### Claude Code plugin
+
+The repository is also a Claude Code plugin. Installed, every markdown file
+Claude writes or edits is checked right away: markdownlint (when `npx` is
+available), then `doc-check-links` and `doc-check-code-refs` on that file
+(when `uv` is available). Fixes are written to the file and anything still
+wrong goes back to Claude, so docs are right before they reach a commit. A
+`writing-docs` skill tells Claude how to write them: link every file and code
+location, point at code by `file.py::symbol`, link between sections, and open
+long documents with an overview.
+
+```text
+/plugin install doc-checks --marketplace MarekWadinger/doc-checks
+```
+
+Answer `y` to add the marketplace, then pick a scope. Outside a terminal
+(`claude plugin install doc-checks --marketplace MarekWadinger/doc-checks`)
+the same works from a shell. The hook reads per-repo settings from
+[`.doc-checks.yaml`](.doc-checks.yaml) like the pre-commit hooks do; files outside a git
+repository get markdownlint and `doc-check-code-refs` only.
+
 ### Hooks
 
 #### `doc-check-make-refs`
